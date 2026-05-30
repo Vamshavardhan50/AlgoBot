@@ -1,6 +1,10 @@
 const API_BASE = window.location.protocol === "file:" ? "http://localhost:3005" : "";
+const FALLBACK_INVITE = "https://discord.com/api/oauth2/authorize?client_id=1502741879211425792&permissions=8&scope=bot%20applications.commands";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Set initial fallback URLs so buttons work immediately
+  setInviteUrls(FALLBACK_INVITE);
+  
   fetchInviteLink();
   fetchStats();
   fetchServers();
@@ -8,9 +12,18 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchPotd();
 });
 
-// Helper: Format large numbers with commas
+// Helper: Format large numbers with commas safely
 function formatNumber(num) {
+  if (num === undefined || num === null) return "0";
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function setInviteUrls(url) {
+  const btnIds = ["nav-invite-btn", "hero-invite-btn", "section-invite-btn"];
+  btnIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.href = url;
+  });
 }
 
 // 1. Fetch Invite Link
@@ -18,13 +31,11 @@ async function fetchInviteLink() {
   try {
     const res = await fetch(`${API_BASE}/api/bot-invite`);
     const data = await res.json();
-    if (data.url) {
-      document.getElementById("nav-invite-btn").href = data.url;
-      document.getElementById("hero-invite-btn").href = data.url;
-      document.getElementById("section-invite-btn").href = data.url;
+    if (data && data.url) {
+      setInviteUrls(data.url);
     }
   } catch (error) {
-    console.error("Failed to fetch bot invite link:", error);
+    console.warn("Using fallback invite link due to fetch issue:", error);
   }
 }
 
@@ -64,10 +75,13 @@ async function fetchServers() {
     }
     
     grid.innerHTML = servers.map(server => {
-      // Create server icon initials if no icon URL
-      const initials = server.name ? server.name.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase() : "CFG";
+      if (!server) return "";
+      const serverName = server.name || "Unnamed Server";
+      const memberCount = server.memberCount || 0;
+      const initials = serverName.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
+      
       const iconHTML = server.iconUrl 
-        ? `<img class="server-icon" src="${server.iconUrl}" alt="${server.name}" onerror="this.outerHTML='<div class=&quot;server-icon&quot;>${initials}</div>'">`
+        ? `<img class="server-icon" src="${server.iconUrl}" alt="${serverName}" onerror="this.outerHTML='<div class=&quot;server-icon&quot;>${initials}</div>'">`
         : `<div class="server-icon">${initials}</div>`;
       
       const contestBadge = server.contestChannel && server.contestChannel !== "Not Configured"
@@ -87,10 +101,10 @@ async function fetchServers() {
           <div class="community-header">
             ${iconHTML}
             <div class="server-info">
-              <h4>${server.name}</h4>
+              <h4>${serverName}</h4>
               <div class="member-count">
                 <i class="fa-solid fa-user-group"></i>
-                <span>${formatNumber(server.memberCount)} members</span>
+                <span>${formatNumber(memberCount)} members</span>
               </div>
             </div>
           </div>
