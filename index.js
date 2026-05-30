@@ -46,6 +46,13 @@ async function start() {
 
   const app = express();
 
+  // Enable CORS for local file preview support
+  app.use((_req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
+
   // Serve static files from public directory
   app.use(express.static("public"));
 

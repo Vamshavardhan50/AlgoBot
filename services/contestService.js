@@ -194,9 +194,10 @@ export async function sendDailyContestAlerts(client) {
       const embed = buildContestEmbed({
         platform: contest.platform,
         contestName: contest.contestName,
-        contestTime: formatDateTime(contest.contestTime, env.timezone),
+        contestTime: contest.contestTime,
         duration: contest.duration,
         link: contest.contestLink,
+        statusText: "Today's Contest",
       });
       await channel.send({ content: mention || undefined, embeds: [embed] });
     }
@@ -220,16 +221,29 @@ export async function sendContestReminders(client) {
       if (!channel || !channel.isTextBased()) continue;
 
       const mention = getRoleMention(config.contestRoleId, config.guildId);
+
+      const diffMs = new Date(contest.contestTime).getTime() - new Date().getTime();
+      const diffMins = Math.max(0, Math.round(diffMs / (60 * 1000)));
+      
+      let statusText = `About to start in ${diffMins} min`;
+      if (diffMins >= 45) { // If close to 1 hour, say 1 hr
+        const hrs = Math.round(diffMins / 60);
+        statusText = `About to start in ${hrs} ${hrs === 1 ? "hr" : "hrs"}`;
+      } else if (diffMins === 0) {
+        statusText = `Starting now`;
+      }
+
       const embed = buildContestEmbed({
         platform: contest.platform,
         contestName: contest.contestName,
-        contestTime: formatDateTime(contest.contestTime, env.timezone),
+        contestTime: contest.contestTime,
         duration: contest.duration,
         link: contest.contestLink,
+        statusText: statusText,
       });
 
       await channel.send({
-        content: `${mention ? mention + " " : ""}⚠️ **Contest starting soon!** Please make sure to register if you haven't already! [Register Here](${contest.contestLink})`,
+        content: mention || undefined,
         embeds: [embed],
       });
     }

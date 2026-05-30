@@ -52,9 +52,10 @@ export default {
       const embed = buildContestEmbed({
         platform: contest.platform,
         contestName: contest.contestName,
-        contestTime: formatDateTime(contest.contestTime, env.timezone),
+        contestTime: contest.contestTime,
         duration: contest.duration,
         link: contest.contestLink,
+        statusText: "Upcoming Contest",
       });
       await channel.send({ content: mention || undefined, embeds: [embed] });
     }

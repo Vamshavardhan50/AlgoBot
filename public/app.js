@@ -1,3 +1,5 @@
+const API_BASE = window.location.protocol === "file:" ? "http://localhost:3000" : "";
+
 document.addEventListener("DOMContentLoaded", () => {
   fetchInviteLink();
   fetchStats();
@@ -8,13 +10,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Helper: Format large numbers with commas
 function formatNumber(num) {
-  return num.toString().replace(/\B(?=(\d3)+(?!\d))/g, ",");
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 // 1. Fetch Invite Link
 async function fetchInviteLink() {
   try {
-    const res = await fetch("/api/bot-invite");
+    const res = await fetch(`${API_BASE}/api/bot-invite`);
     const data = await res.json();
     if (data.url) {
       document.getElementById("nav-invite-btn").href = data.url;
@@ -29,7 +31,7 @@ async function fetchInviteLink() {
 // 2. Fetch Dashboard Statistics
 async function fetchStats() {
   try {
-    const res = await fetch("/api/stats");
+    const res = await fetch(`${API_BASE}/api/stats`);
     const data = await res.json();
     
     document.getElementById("stat-servers").innerText = formatNumber(data.servers || 0);
@@ -48,7 +50,7 @@ async function fetchStats() {
 async function fetchServers() {
   const grid = document.getElementById("communities-grid");
   try {
-    const res = await fetch("/api/servers");
+    const res = await fetch(`${API_BASE}/api/servers`);
     const servers = await res.json();
     
     if (!servers || servers.length === 0) {
@@ -119,7 +121,7 @@ async function fetchServers() {
 async function fetchContests() {
   const container = document.getElementById("contests-list");
   try {
-    const res = await fetch("/api/contests");
+    const res = await fetch(`${API_BASE}/api/contests`);
     const contests = await res.json();
     
     if (!contests || contests.length === 0) {
@@ -154,7 +156,7 @@ async function fetchContests() {
 async function fetchPotd() {
   const container = document.getElementById("potd-container");
   try {
-    const res = await fetch("/api/potd");
+    const res = await fetch(`${API_BASE}/api/potd`);
     const potd = await res.json();
     
     if (!potd || !potd.problemName) {
