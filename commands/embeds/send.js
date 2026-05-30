@@ -1,6 +1,7 @@
 import { AttachmentBuilder, PermissionsBitField, SlashCommandBuilder } from "discord.js";
 import { buildCustomEmbed } from "../../utils/embedUtils.js";
 import { safeReply } from "../../utils/interaction.js";
+import { getRoleMention } from "../../utils/validation.js";
 
 function collectAttachments(interaction) {
   const attachments = [
@@ -82,7 +83,7 @@ export default {
     console.log(`[Embed Send] Sending embed with ${files.length} files`);
 
     const role = interaction.options.getRole("role");
-    const mention = role ? `<@&${role.id}>` : "";
+    const mention = role ? getRoleMention(role.id, interaction.guildId) : "";
 
     const embed = buildCustomEmbed(draft);
     await channel.send({ content: mention || undefined, embeds: [embed], files });

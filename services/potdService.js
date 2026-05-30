@@ -1,7 +1,7 @@
 import axios from "axios";
 import { env } from "../config/constants.js";
 import { buildPotdEmbed } from "../utils/embedUtils.js";
-import { formatDateTime } from "../utils/validation.js";
+import { formatDateTime, getRoleMention } from "../utils/validation.js";
 import { logger } from "../utils/logger.js";
 import {
   createPotd,
@@ -89,8 +89,8 @@ export async function sendDailyPotd(client, slot = "") {
       link: potd.problemLink,
     });
 
-    const mention = config.potdRoleId ? `<@&${config.potdRoleId}>` : "";
-    await channel.send({ content: mention, embeds: [embed] });
+    const mention = getRoleMention(config.potdRoleId, config.guildId);
+    await channel.send({ content: mention || undefined, embeds: [embed] });
 
     updateGuildConfig(config.guildId, { lastPotdSentAt: todayKey });
   }

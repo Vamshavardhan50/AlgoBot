@@ -8,7 +8,7 @@ import {
 } from "../models/Contest.js";
 import { env } from "../config/constants.js";
 import { buildContestEmbed } from "../utils/embedUtils.js";
-import { formatDateTime } from "../utils/validation.js";
+import { formatDateTime, getRoleMention } from "../utils/validation.js";
 import { logger } from "../utils/logger.js";
 
 function getLocalDateKey(date = new Date()) {
@@ -188,7 +188,7 @@ export async function sendDailyContestAlerts(client) {
       .catch(() => null);
     if (!channel || !channel.isTextBased()) continue;
 
-    const mention = config.contestRoleId ? `<@&${config.contestRoleId}>` : "";
+    const mention = getRoleMention(config.contestRoleId, config.guildId);
 
     for (const contest of contests) {
       const embed = buildContestEmbed({
@@ -198,7 +198,7 @@ export async function sendDailyContestAlerts(client) {
         duration: contest.duration,
         link: contest.contestLink,
       });
-      await channel.send({ content: mention, embeds: [embed] });
+      await channel.send({ content: mention || undefined, embeds: [embed] });
     }
 
     updateGuildConfig(config.guildId, { lastContestAlertAt: todayKey });
@@ -219,7 +219,7 @@ export async function sendContestReminders(client) {
         .catch(() => null);
       if (!channel || !channel.isTextBased()) continue;
 
-      const mention = config.contestRoleId ? `<@&${config.contestRoleId}>` : "";
+      const mention = getRoleMention(config.contestRoleId, config.guildId);
       const embed = buildContestEmbed({
         platform: contest.platform,
         contestName: contest.contestName,
@@ -229,7 +229,7 @@ export async function sendContestReminders(client) {
       });
 
       await channel.send({
-        content: `${mention} ⚠️ **Contest starting soon!** Please make sure to register if you haven't already! [Register Here](${contest.contestLink})`,
+        content: `${mention ? mention + " " : ""}⚠️ **Contest starting soon!** Please make sure to register if you haven't already! [Register Here](${contest.contestLink})`,
         embeds: [embed],
       });
     }

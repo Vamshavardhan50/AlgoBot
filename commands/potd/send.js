@@ -4,6 +4,7 @@ import { ensureTodayPotd } from "../../services/potdService.js";
 import { buildPotdEmbed } from "../../utils/embedUtils.js";
 import { safeReply } from "../../utils/interaction.js";
 import { formatPotdDate } from "../../models/POTD.js";
+import { getRoleMention } from "../../utils/validation.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -52,8 +53,8 @@ export default {
       link: potd.problemLink,
     });
 
-    const mention = config.potdRoleId ? `<@&${config.potdRoleId}>` : "";
-    await channel.send({ content: mention, embeds: [embed] });
+    const mention = getRoleMention(config.potdRoleId, interaction.guildId);
+    await channel.send({ content: mention || undefined, embeds: [embed] });
 
     updateGuildConfig(interaction.guildId, {
       lastPotdSentAt: formatPotdDate(new Date()),

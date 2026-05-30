@@ -47,3 +47,9 @@ export function formatDateTime(date, timeZone) {
     timeStyle: "short",
   });
 }
+
+export function getRoleMention(roleId, guildId) {
+  if (!roleId) return "";
+  if (roleId === guildId) return "@everyone";
+  return `<@&${roleId}>`;
+}

@@ -3,7 +3,7 @@ import { listUpcoming } from "../../models/Contest.js";
 import { getGuildConfig, updateGuildConfig } from "../../models/GuildConfig.js";
 import { env } from "../../config/constants.js";
 import { buildContestEmbed } from "../../utils/embedUtils.js";
-import { formatDateTime } from "../../utils/validation.js";
+import { formatDateTime, getRoleMention } from "../../utils/validation.js";
 import { safeReply } from "../../utils/interaction.js";
 
 export default {
@@ -46,7 +46,7 @@ export default {
       });
     }
 
-    const mention = config.contestRoleId ? `<@&${config.contestRoleId}>` : "";
+    const mention = getRoleMention(config.contestRoleId, interaction.guildId);
 
     for (const contest of contests) {
       const embed = buildContestEmbed({
@@ -56,7 +56,7 @@ export default {
         duration: contest.duration,
         link: contest.contestLink,
       });
-      await channel.send({ content: mention, embeds: [embed] });
+      await channel.send({ content: mention || undefined, embeds: [embed] });
     }
 
     const todayKey = new Date().toLocaleDateString("en-CA", {
