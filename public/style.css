@@ -621,6 +621,7 @@ nav {
 .platform-codeforces { background: rgba(52, 152, 219, 0.15); color: #3498db; }
 .platform-codechef { background: rgba(139, 69, 19, 0.15); color: #a0522d; }
 .platform-atcoder { background: rgba(142, 68, 173, 0.15); color: #9b59b6; }
+.platform-geeksforgeeks { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
 
 .contest-time {
   display: flex;

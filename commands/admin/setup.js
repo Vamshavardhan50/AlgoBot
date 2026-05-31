@@ -39,17 +39,23 @@ export default {
     const createdRoles = [];
 
     for (const [key, name] of Object.entries(setupDefaults.channels)) {
-      const existing = interaction.guild.channels.cache.find(
-        (channel) => channel.name === name,
+      let channel = interaction.guild.channels.cache.find(
+        (c) => c.name === name,
       );
-      if (existing) continue;
+      
+      if (!channel) {
+        try {
+          channel = await interaction.guild.channels.create({
+            name,
+            type: ChannelType.GuildText,
+          });
+          createdChannels.push(channel.name);
+        } catch (error) {
+          logger.error("Failed to create channel", error?.message || error);
+        }
+      }
 
-      try {
-        const channel = await interaction.guild.channels.create({
-          name,
-          type: ChannelType.GuildText,
-        });
-        createdChannels.push(channel.name);
+      if (channel) {
         if (key === "contest") {
           updateGuildConfig(guildId, { contestChannelId: channel.id });
         }
@@ -59,28 +65,33 @@ export default {
         if (key === "resources") {
           updateGuildConfig(guildId, { resourceChannelId: channel.id });
         }
-      } catch (error) {
-        logger.error("Failed to create channel", error?.message || error);
       }
     }
 
     for (const [key, name] of Object.entries(setupDefaults.roles)) {
-      const existing = interaction.guild.roles.cache.find(
-        (role) => role.name === name,
+      let role = interaction.guild.roles.cache.find(
+        (r) => r.name === name,
       );
-      if (existing) continue;
 
-      try {
-        const role = await interaction.guild.roles.create({ name });
-        createdRoles.push(role.name);
+      if (!role) {
+        try {
+          role = await interaction.guild.roles.create({
+            name,
+            mentionable: true,
+          });
+          createdRoles.push(role.name);
+        } catch (error) {
+          logger.error("Failed to create role", error?.message || error);
+        }
+      }
+
+      if (role) {
         if (key === "contest") {
           updateGuildConfig(guildId, { contestRoleId: role.id });
         }
         if (key === "potd") {
           updateGuildConfig(guildId, { potdRoleId: role.id });
         }
-      } catch (error) {
-        logger.error("Failed to create role", error?.message || error);
       }
     }
 

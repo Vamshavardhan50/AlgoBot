@@ -8,7 +8,8 @@ import {
 } from "../models/Contest.js";
 import { env } from "../config/constants.js";
 import { buildContestEmbed } from "../utils/embedUtils.js";
-import { formatDateTime, getRoleMention } from "../utils/validation.js";
+import { formatDateTime, getRoleMention, sendWithTempMention } from "../utils/validation.js";
+import { generateFlirtyReminder } from "./groqService.js";
 import { logger } from "../utils/logger.js";
 
 function getLocalDateKey(date = new Date()) {
@@ -179,6 +180,10 @@ export async function sendDailyContestAlerts(client) {
     withinNextDay(contest.contestTime),
   );
 
+  if (!contests.length) return;
+
+  const flirtyText = await generateFlirtyReminder("contest");
+
   for (const config of configs) {
     if (!config?.contestChannelId) continue;
     if (config.lastContestAlertAt === todayKey) continue;
@@ -188,19 +193,21 @@ export async function sendDailyContestAlerts(client) {
       .catch(() => null);
     if (!channel || !channel.isTextBased()) continue;
 
-    const mention = getRoleMention(config.contestRoleId, config.guildId);
-
-    for (const contest of contests) {
-      const embed = buildContestEmbed({
+    const embeds = contests.map((contest) =>
+      buildContestEmbed({
         platform: contest.platform,
         contestName: contest.contestName,
         contestTime: contest.contestTime,
         duration: contest.duration,
         link: contest.contestLink,
         statusText: "Today's Contest",
-      });
-      await channel.send({ content: mention || undefined, embeds: [embed] });
-    }
+      }),
+    );
+
+    const mention = getRoleMention(config.contestRoleId, config.guildId);
+    const content = mention ? `${flirtyText}\n${mention}` : flirtyText;
+
+    await sendWithTempMention(channel, content, embeds, config.contestRoleId);
 
     updateGuildConfig(config.guildId, { lastContestAlertAt: todayKey });
   }
@@ -220,13 +227,11 @@ export async function sendContestReminders(client) {
         .catch(() => null);
       if (!channel || !channel.isTextBased()) continue;
 
-      const mention = getRoleMention(config.contestRoleId, config.guildId);
-
       const diffMs = new Date(contest.contestTime).getTime() - new Date().getTime();
       const diffMins = Math.max(0, Math.round(diffMs / (60 * 1000)));
       
       let statusText = `About to start in ${diffMins} min`;
-      if (diffMins >= 45) { // If close to 1 hour, say 1 hr
+      if (diffMins >= 45) {
         const hrs = Math.round(diffMins / 60);
         statusText = `About to start in ${hrs} ${hrs === 1 ? "hr" : "hrs"}`;
       } else if (diffMins === 0) {
@@ -242,10 +247,11 @@ export async function sendContestReminders(client) {
         statusText: statusText,
       });
 
-      await channel.send({
-        content: mention || undefined,
-        embeds: [embed],
-      });
+      const warningText = `⚠️ **Contest starting soon!** Please make sure to register if you haven't already!`;
+      const mention = getRoleMention(config.contestRoleId, config.guildId);
+      const content = mention ? `${warningText}\n${mention}` : warningText;
+
+      await sendWithTempMention(channel, content, [embed], config.contestRoleId);
     }
 
     markReminderSent(contest.id);

@@ -48,6 +48,23 @@ export function getPotdByDate(date) {
   return rowToPotd(db.prepare("SELECT * FROM potd WHERE date = ?").get(date));
 }
 
+export function getPotdByDateAndPlatform(date, platform) {
+  const db = getDb();
+  return rowToPotd(
+    db
+      .prepare("SELECT * FROM potd WHERE date = ? AND platform = ?")
+      .get(date, platform),
+  );
+}
+
+export function listPotdByDate(date) {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM potd WHERE date = ?")
+    .all(date)
+    .map(rowToPotd);
+}
+
 export function listPotd({ limit = 20 } = {}) {
   const db = getDb();
   return db

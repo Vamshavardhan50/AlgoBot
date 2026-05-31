@@ -79,6 +79,8 @@ export function buildPotdEmbed({ platform, problemName, difficulty, link }) {
 
   let color = embedColors.potd;
   if (platform === "LeetCode") color = 0xffa116; // LeetCode Yellow
+  else if (platform === "GeeksforGeeks") color = 0x2ecc71; // GFG Green
+  else if (platform === "Codeforces") color = 0xff5555; // Codeforces Red
 
   return new EmbedBuilder()
     .setColor(color)

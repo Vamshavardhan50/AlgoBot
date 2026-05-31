@@ -47,9 +47,13 @@ async function start() {
   const app = express();
 
   // Enable CORS for local file preview support
-  app.use((_req, res, next) => {
+  app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
     next();
   });
 
@@ -139,7 +143,7 @@ async function start() {
   app.get("/api/potd", async (_req, res) => {
     try {
       const potd = await ensureTodayPotd();
-      res.json(potd || {});
+      res.json(potd || []);
     } catch (error) {
       logger.error("API POTD error", error?.message || error);
       res.status(500).json({ error: "Internal server error" });

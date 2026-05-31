@@ -15,6 +15,7 @@ export default {
         .addChoices(
           { name: "LeetCode", value: "LeetCode" },
           { name: "Codeforces", value: "Codeforces" },
+          { name: "GeeksforGeeks", value: "GeeksforGeeks" },
           { name: "CodeChef", value: "CodeChef" },
           { name: "AtCoder", value: "AtCoder" },
           { name: "Other", value: "Other" },

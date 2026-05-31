@@ -53,3 +53,40 @@ export function getRoleMention(roleId, guildId) {
   if (roleId === guildId) return "@everyone";
   return `<@&${roleId}>`;
 }
+
+export async function sendWithTempMention(channel, content, embeds, roleId) {
+  if (!channel) return null;
+  
+  if (!roleId || !content) {
+    return await channel.send({ content: content || undefined, embeds }).catch(() => null);
+  }
+
+  const guild = channel.guild;
+  if (!guild) {
+    return await channel.send({ content, embeds }).catch(() => null);
+  }
+
+  const role = guild.roles.cache.get(roleId) || await guild.roles.fetch(roleId).catch(() => null);
+  let tempMentionable = false;
+
+  if (role && !role.mentionable && guild.members.me?.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+    try {
+      await role.setMentionable(true, "Temporary mention for alert");
+      tempMentionable = true;
+    } catch {
+      // ignore
+    }
+  }
+
+  const message = await channel.send({ content, embeds }).catch(() => null);
+
+  if (tempMentionable && role) {
+    try {
+      await role.setMentionable(false, "Revert temporary mention");
+    } catch {
+      // ignore
+    }
+  }
+
+  return message;
+}

@@ -4,7 +4,8 @@ import { ensureTodayPotd } from "../../services/potdService.js";
 import { buildPotdEmbed } from "../../utils/embedUtils.js";
 import { safeReply } from "../../utils/interaction.js";
 import { formatPotdDate } from "../../models/POTD.js";
-import { getRoleMention } from "../../utils/validation.js";
+import { getRoleMention, sendWithTempMention } from "../../utils/validation.js";
+import { generateFlirtyReminder } from "../../services/groqService.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -38,23 +39,28 @@ export default {
       });
     }
 
-    const potd = await ensureTodayPotd();
-    if (!potd) {
+    const potds = await ensureTodayPotd();
+    if (!potds || !potds.length) {
       return safeReply(interaction, {
         content: "No POTD available to send.",
         ephemeral: true,
       });
     }
 
-    const embed = buildPotdEmbed({
-      platform: potd.platform,
-      problemName: potd.problemName,
-      difficulty: potd.difficulty,
-      link: potd.problemLink,
-    });
+    const embeds = potds.map((potd) =>
+      buildPotdEmbed({
+        platform: potd.platform,
+        problemName: potd.problemName,
+        difficulty: potd.difficulty,
+        link: potd.problemLink,
+      }),
+    );
 
+    const flirtyText = await generateFlirtyReminder("potd");
     const mention = getRoleMention(config.potdRoleId, interaction.guildId);
-    await channel.send({ content: mention || undefined, embeds: [embed] });
+    const content = mention ? `${flirtyText}\n${mention}` : flirtyText;
+
+    await sendWithTempMention(channel, content, embeds, config.potdRoleId);
 
     updateGuildConfig(interaction.guildId, {
       lastPotdSentAt: formatPotdDate(new Date()),

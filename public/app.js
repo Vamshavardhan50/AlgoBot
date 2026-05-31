@@ -171,36 +171,44 @@ async function fetchPotd() {
   const container = document.getElementById("potd-container");
   try {
     const res = await fetch(`${API_BASE}/api/potd`);
-    const potd = await res.json();
+    const potds = await res.json();
     
-    if (!potd || !potd.problemName) {
+    if (!Array.isArray(potds) || potds.length === 0) {
       container.innerHTML = `
         <div class="no-potd-msg">
           <i class="fa-regular fa-circle-question" style="font-size: 2rem; margin-bottom: 8px;"></i>
-          <p>No problem of the day has been generated yet for today.</p>
+          <p>No problems of the day have been generated yet for today.</p>
         </div>
       `;
       return;
     }
     
-    const diffClass = `difficulty-${potd.difficulty.toLowerCase()}`;
-    const platformClass = `platform-${potd.platform.toLowerCase()}`;
-    
-    container.innerHTML = `
-      <div class="potd-card-inner">
-        <h4 class="potd-title">${potd.problemName}</h4>
-        <div class="potd-meta">
-          <span class="platform-pill ${platformClass}">${potd.platform}</span>
-          <span class="difficulty-badge ${diffClass}">${potd.difficulty}</span>
+    container.innerHTML = potds.map((potd) => {
+      let diffClass = `difficulty-${potd.difficulty.toLowerCase()}`;
+      if (!isNaN(potd.difficulty)) {
+        const r = Number(potd.difficulty);
+        if (r < 1200) diffClass = "difficulty-easy";
+        else if (r < 1600) diffClass = "difficulty-medium";
+        else diffClass = "difficulty-hard";
+      }
+      const platformClass = `platform-${potd.platform.toLowerCase()}`;
+      
+      return `
+        <div class="potd-card-inner">
+          <h4 class="potd-title">${potd.problemName}</h4>
+          <div class="potd-meta">
+            <span class="platform-pill ${platformClass}">${potd.platform}</span>
+            <span class="difficulty-badge ${diffClass}">${potd.difficulty}</span>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+            Today's daily challenge is from <strong>${potd.platform}</strong>. Click below to tackle the problem and submit your solution!
+          </p>
+          <a href="${potd.problemLink}" target="_blank" class="btn btn-primary" style="margin-top: 8px; justify-content: center;">
+            Solve Challenge <i class="fa-solid fa-rocket"></i>
+          </a>
         </div>
-        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
-          Today's daily challenge is from <strong>${potd.platform}</strong>. Click below to tackle the problem and submit your solution!
-        </p>
-        <a href="${potd.problemLink}" target="_blank" class="btn btn-primary" style="margin-top: 8px; justify-content: center;">
-          Solve Challenge <i class="fa-solid fa-rocket"></i>
-        </a>
-      </div>
-    `;
+      `;
+    }).join("");
   } catch (error) {
     console.error("Failed to fetch POTD:", error);
     container.innerHTML = `<p class="no-potd-msg">Failed to load problem of the day.</p>`;

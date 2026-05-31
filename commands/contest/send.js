@@ -3,7 +3,8 @@ import { listUpcoming } from "../../models/Contest.js";
 import { getGuildConfig, updateGuildConfig } from "../../models/GuildConfig.js";
 import { env } from "../../config/constants.js";
 import { buildContestEmbed } from "../../utils/embedUtils.js";
-import { formatDateTime, getRoleMention } from "../../utils/validation.js";
+import { getRoleMention, sendWithTempMention } from "../../utils/validation.js";
+import { generateFlirtyReminder } from "../../services/groqService.js";
 import { safeReply } from "../../utils/interaction.js";
 
 export default {
@@ -46,19 +47,22 @@ export default {
       });
     }
 
-    const mention = getRoleMention(config.contestRoleId, interaction.guildId);
-
-    for (const contest of contests) {
-      const embed = buildContestEmbed({
+    const embeds = contests.map((contest) =>
+      buildContestEmbed({
         platform: contest.platform,
         contestName: contest.contestName,
         contestTime: contest.contestTime,
         duration: contest.duration,
         link: contest.contestLink,
         statusText: "Upcoming Contest",
-      });
-      await channel.send({ content: mention || undefined, embeds: [embed] });
-    }
+      }),
+    );
+
+    const flirtyText = await generateFlirtyReminder("contest");
+    const mention = getRoleMention(config.contestRoleId, interaction.guildId);
+    const content = mention ? `${flirtyText}\n${mention}` : flirtyText;
+
+    await sendWithTempMention(channel, content, embeds, config.contestRoleId);
 
     const todayKey = new Date().toLocaleDateString("en-CA", {
       timeZone: env.timezone,

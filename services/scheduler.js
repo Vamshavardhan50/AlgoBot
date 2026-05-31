@@ -5,13 +5,13 @@ import {
   sendDailyContestAlerts,
   storeFetchedContests,
 } from "./contestService.js";
-import { sendDailyPotd, ensureTodayPotd } from "./potdService.js";
+import { sendDailyPotd, ensureTodayPotd, sendPotdReminder } from "./potdService.js";
 import { logger } from "../utils/logger.js";
 
 export function startScheduler(client) {
-  // 1. Daily Scraping Job at 04:50 AM
+  // 1. Daily Scraping Job at 05:30 AM
   cron.schedule(
-    "50 4 * * *",
+    "30 5 * * *",
     async () => {
       try {
         logger.info("Scheduler: Starting morning scrape for contests and POTD...");
@@ -19,10 +19,10 @@ export function startScheduler(client) {
         logger.info(`Scheduler: Scraped and stored ${contestResult.total} contests (${contestResult.inserted} new).`);
         
         const potdResult = await ensureTodayPotd();
-        if (potdResult) {
-          logger.info(`Scheduler: Scraped and stored POTD: ${potdResult.problemName} (${potdResult.platform}).`);
+        if (potdResult && potdResult.length) {
+          logger.info(`Scheduler: Scraped and stored ${potdResult.length} POTD challenges.`);
         } else {
-          logger.warn("Scheduler: Failed to scrape today's POTD or none available.");
+          logger.warn("Scheduler: Failed to scrape today's POTD challenges or none available.");
         }
       } catch (error) {
         logger.error("Scheduler: Morning scrape job failed", error?.message || error);
@@ -31,9 +31,9 @@ export function startScheduler(client) {
     { timezone: env.timezone },
   );
 
-  // 2. Daily Morning Alerts at 05:00 AM
+  // 2. Daily Morning Alerts at 06:00 AM
   cron.schedule(
-    "0 5 * * *",
+    "0 6 * * *",
     async () => {
       try {
         logger.info("Scheduler: Sending morning alerts...");
@@ -73,5 +73,19 @@ export function startScheduler(client) {
     { timezone: env.timezone },
   );
 
-  logger.info("Schedulers initialized: 04:50 AM scraping, 05:00 AM alerts, 08:00 PM evening alerts, 5-minute pings.");
+  // 5. POTD Flirty Reminders every 3 hours
+  cron.schedule(
+    "0 */3 * * *",
+    async () => {
+      try {
+        logger.info("Scheduler: Sending flirty POTD reminders...");
+        await sendPotdReminder(client);
+      } catch (error) {
+        logger.error("Scheduler: POTD reminder scheduler failed", error?.message || error);
+      }
+    },
+    { timezone: env.timezone },
+  );
+
+  logger.info("Schedulers initialized: 05:30 AM scraping, 06:00 AM alerts, 08:00 PM evening alerts, 5-minute pings, 3-hour flirty pings.");
 }
