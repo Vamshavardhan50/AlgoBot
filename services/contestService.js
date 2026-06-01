@@ -219,14 +219,15 @@ export async function sendContestReminders(client) {
 
   if (!contests.length) return;
 
-  for (const contest of contests) {
-    for (const config of configs) {
-      if (!config?.contestChannelId) continue;
-      const channel = await client.channels
-        .fetch(config.contestChannelId)
-        .catch(() => null);
-      if (!channel || !channel.isTextBased()) continue;
+  for (const config of configs) {
+    if (!config?.contestChannelId) continue;
+    const channel = await client.channels
+      .fetch(config.contestChannelId)
+      .catch(() => null);
+    if (!channel || !channel.isTextBased()) continue;
 
+    const embeds = [];
+    for (const contest of contests) {
       const diffMs = new Date(contest.contestTime).getTime() - new Date().getTime();
       const diffMins = Math.max(0, Math.round(diffMs / (60 * 1000)));
       
@@ -238,22 +239,28 @@ export async function sendContestReminders(client) {
         statusText = `Starting now`;
       }
 
-      const embed = buildContestEmbed({
-        platform: contest.platform,
-        contestName: contest.contestName,
-        contestTime: contest.contestTime,
-        duration: contest.duration,
-        link: contest.contestLink,
-        statusText: statusText,
-      });
+      embeds.push(
+        buildContestEmbed({
+          platform: contest.platform,
+          contestName: contest.contestName,
+          contestTime: contest.contestTime,
+          duration: contest.duration,
+          link: contest.contestLink,
+          statusText: statusText,
+        })
+      );
+    }
 
-      const warningText = `⚠️ **Contest starting soon!** Please make sure to register if you haven't already!`;
+    if (embeds.length > 0) {
+      const warningText = `⚠️ **Contest(s) starting soon!** Please make sure to register if you haven't already!`;
       const mention = getRoleMention(config.contestRoleId, config.guildId);
       const content = mention ? `${warningText}\n${mention}` : warningText;
 
-      await sendWithTempMention(channel, content, [embed], config.contestRoleId);
+      await sendWithTempMention(channel, content, embeds, config.contestRoleId);
     }
+  }
 
+  for (const contest of contests) {
     markReminderSent(contest.id);
   }
 }

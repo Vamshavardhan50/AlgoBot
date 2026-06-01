@@ -1,4 +1,5 @@
 import { getDb, toIso } from "./db.js";
+import { triggerBackup } from "../services/backupService.js";
 
 function rowToPotd(row) {
   if (!row) return null;
@@ -29,6 +30,7 @@ export function createPotd(data) {
     data.date,
   );
 
+  triggerBackup();
   return getPotdByUnique(data.platform, data.problemName, data.date);
 }
 
@@ -78,6 +80,7 @@ export function removePotd(id) {
   const existing = db.prepare("SELECT * FROM potd WHERE id = ?").get(id);
   if (!existing) return null;
   db.prepare("DELETE FROM potd WHERE id = ?").run(id);
+  triggerBackup();
   return rowToPotd(existing);
 }
 

@@ -65,6 +65,40 @@ export function initDatabase() {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS user_handles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      handle TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(guild_id, user_id, platform)
+    );
+
+    CREATE TABLE IF NOT EXISTS duels (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      challenger_id TEXT NOT NULL,
+      opponent_id TEXT NOT NULL,
+      contest_id INTEGER NOT NULL,
+      problem_index TEXT NOT NULL,
+      time_limit INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      winner_id TEXT DEFAULT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      accepted_at TEXT DEFAULT NULL,
+      expires_at TEXT DEFAULT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS starboard (
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      wins INTEGER DEFAULT 0,
+      losses INTEGER DEFAULT 0,
+      score INTEGER DEFAULT 0,
+      PRIMARY KEY (guild_id, user_id)
+    );
   `);
 
   return db;
@@ -73,6 +107,13 @@ export function initDatabase() {
 export function getDb() {
   if (!db) return initDatabase();
   return db;
+}
+
+export function closeDatabase() {
+  if (db) {
+    db.close();
+    db = null;
+  }
 }
 
 export function toIso(value) {

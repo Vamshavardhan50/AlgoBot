@@ -1,4 +1,5 @@
 import { getDb, toIso } from "./db.js";
+import { triggerBackup } from "../services/backupService.js";
 
 function parseJson(value, fallback = []) {
   if (!value) return fallback;
@@ -48,6 +49,7 @@ export function createResource(data) {
   const row = db
     .prepare("SELECT * FROM resources ORDER BY id DESC LIMIT 1")
     .get();
+  triggerBackup();
   return rowToResource(row);
 }
 
@@ -88,6 +90,7 @@ export function updateResource(id, updates) {
     id,
   );
 
+  triggerBackup();
   return getResourceById(id);
 }
 
@@ -96,6 +99,7 @@ export function deleteResource(id) {
   const existing = getResourceById(id);
   if (!existing) return null;
   db.prepare("DELETE FROM resources WHERE id = ?").run(id);
+  triggerBackup();
   return existing;
 }
 

@@ -26,6 +26,12 @@ import embedPreview from "./embeds/preview.js";
 import embedSend from "./embeds/send.js";
 import embedClear from "./embeds/clear.js";
 
+import handle from "./handles/handle.js";
+import profile from "./handles/profile.js";
+import duel from "./duels/duel.js";
+import starboard from "./duels/starboard.js";
+import help from "./general/help.js";
+
 export const commands = [
   setup,
   contestChannel,
@@ -50,4 +56,9 @@ export const commands = [
   embedPreview,
   embedSend,
   embedClear,
+  handle,
+  profile,
+  duel,
+  starboard,
+  help,
 ];

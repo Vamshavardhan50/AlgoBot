@@ -1,4 +1,5 @@
 import { getDb, toIso } from "./db.js";
+import { triggerBackup } from "../services/backupService.js";
 
 function rowToConfig(row) {
   if (!row) return null;
@@ -29,6 +30,7 @@ export function ensureGuildConfig(guildId) {
   db.prepare("INSERT OR IGNORE INTO guild_configs (guild_id) VALUES (?)").run(
     guildId,
   );
+  triggerBackup();
   return getGuildConfig(guildId);
 }
 
@@ -73,5 +75,6 @@ export function updateGuildConfig(guildId, updates = {}) {
     `UPDATE guild_configs SET ${sets.join(", ")} WHERE guild_id = ?`,
   ).run(...values);
 
+  triggerBackup();
   return getGuildConfig(guildId);
 }
