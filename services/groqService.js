@@ -26,43 +26,49 @@ export async function generateFlirtyReminder(type = "potd") {
     return getRandomFallbackLine(type);
   }
 
-  try {
-    const systemPrompt = type === "contest"
-      ? "You are a charming, witty, and slightly flirty AI assistant. Write a short, single-sentence flirty reminder for college students/coders asking if they are ready for today's upcoming competitive programming (CP) contests. Keep it fun, lighthearted, and flirty, under 120 characters. Do not use quotes in the output."
-      : "You are a charming, witty, and slightly flirty AI assistant. Write a short, single-sentence flirty reminder for college students/coders asking if they forgot to solve today's LeetCode/CP Problem of the Day (POTD). Keep it fun, lighthearted, and flirty, under 120 characters. Do not use quotes in the output.";
-    
-    const userPrompt = type === "contest"
-      ? "Generate one flirty line to remind users about today's upcoming coding contests."
-      : "Generate one flirty line to remind users about today's daily POTD.";
+  const systemPrompt = type === "contest"
+    ? "You are a charming, witty, and slightly flirty AI assistant. Write a short, single-sentence flirty reminder for college students/coders asking if they are ready for today's upcoming competitive programming (CP) contests. Keep it fun, lighthearted, and flirty, under 120 characters. Do not use quotes in the output."
+    : "You are a charming, witty, and slightly flirty AI assistant. Write a short, single-sentence flirty reminder for college students/coders asking if they forgot to solve today's LeetCode/CP Problem of the Day (POTD). Keep it fun, lighthearted, and flirty, under 120 characters. Do not use quotes in the output.";
+  
+  const userPrompt = type === "contest"
+    ? "Generate one flirty line to remind users about today's upcoming coding contests."
+    : "Generate one flirty line to remind users about today's daily POTD.";
 
-    const res = await axios.post(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        temperature: 0.85,
-        max_tokens: 60
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${env.groqApiKey}`,
-          "Content-Type": "application/json"
+  const models = ["llama-3.3-70b-versatile", "llama3-8b-8192", "mixtral-8x7b-32768"];
+
+  for (const model of models) {
+    try {
+      const res = await axios.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: 0.85,
+          max_tokens: 80
         },
-        timeout: 5000
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${env.groqApiKey}`,
+            "Content-Type": "application/json"
+          },
+          timeout: 8000
+        }
+      );
 
-    const text = res.data?.choices?.[0]?.message?.content?.trim();
-    if (text) {
-      return text.replace(/^["']|["']$/g, "");
+      const text = res.data?.choices?.[0]?.message?.content?.trim();
+      if (text) {
+        logger.info(`Groq API generated flirting line for ${type} using model ${model}.`);
+        return text.replace(/^["']|["']$/g, "");
+      }
+    } catch (error) {
+      logger.warn(`Groq API call failed for ${type} using model ${model}: ${error?.message || error}`);
     }
-  } catch (error) {
-    logger.warn(`Groq API flirting line generation failed for ${type}:`, error?.message || error);
   }
 
+  logger.warn(`All Groq models failed. Using static fallback flirting line for ${type}.`);
   return getRandomFallbackLine(type);
 }
 
