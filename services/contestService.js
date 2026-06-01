@@ -252,9 +252,11 @@ export async function sendContestReminders(client) {
     }
 
     if (embeds.length > 0) {
+      const flirtyText = await generateFlirtyReminder("contest");
       const warningText = `⚠️ **Contest(s) starting soon!** Please make sure to register if you haven't already!`;
+      const combinedText = `${flirtyText}\n${warningText}`;
       const mention = getRoleMention(config.contestRoleId, config.guildId);
-      const content = mention ? `${warningText}\n${mention}` : warningText;
+      const content = mention ? `${combinedText}\n${mention}` : combinedText;
 
       await sendWithTempMention(channel, content, embeds, config.contestRoleId);
     }
