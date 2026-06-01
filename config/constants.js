@@ -15,7 +15,7 @@ export const env = {
   port: Number(process.env.PORT || 3000),
   enableHealth:
     (process.env.HEALTH_ENDPOINT || "true").toLowerCase() === "true",
-  groqApiKey: process.env.GROQ_API_KEY || "",
+  groqApiKey: process.env.GROQ_API_KEY || process.env.GROK_API_KEY || "",
 };
 
 export const embedColors = {

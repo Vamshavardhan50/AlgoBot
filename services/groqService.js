@@ -22,7 +22,10 @@ const fallbackFlirtingLinesContest = [
 
 export async function generateFlirtyReminder(type = "potd") {
   if (!env.groqApiKey) {
-    logger.debug(`No GROQ_API_KEY set. Using fallback flirting lines for ${type}.`);
+    logger.error("❌ GROQ_API_KEY / GROK_API_KEY is not configured in the environment variables!");
+    if (type === "potd") {
+      return "⚠️ **Groq API Key is not set!** Please add `GROQ_API_KEY` or `GROK_API_KEY` in your Render Environment Variables to enable dynamic flirting lines.";
+    }
     return getRandomFallbackLine(type);
   }
 
@@ -68,7 +71,10 @@ export async function generateFlirtyReminder(type = "potd") {
     }
   }
 
-  logger.warn(`All Groq models failed. Using static fallback flirting line for ${type}.`);
+  logger.error(`❌ All Groq API models failed to generate flirting lines for ${type}.`);
+  if (type === "potd") {
+    return "⚠️ **Groq API call failed!** Please verify your API key and check the server logs for detailed errors.";
+  }
   return getRandomFallbackLine(type);
 }
 
