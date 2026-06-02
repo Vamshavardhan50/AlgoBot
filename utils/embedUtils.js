@@ -4,7 +4,7 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from "discord.js";
-import { embedColors } from "../config/constants.js";
+import { embedColors, env } from "../config/constants.js";
 
 function getContestSlug(link) {
   if (!link) return "0000";
@@ -20,14 +20,19 @@ function formatContestDate(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return "Unknown Date";
   
-  const days = d.getUTCDate();
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const month = months[d.getUTCMonth()];
-  const year = d.getUTCFullYear().toString().slice(-2);
-  const hours = d.getUTCHours().toString().padStart(2, '0');
-  const minutes = d.getUTCMinutes().toString().padStart(2, '0');
+  const timezone = env.timezone || "Asia/Kolkata";
   
-  return `${days} ${month} ${year}, ${hours}:${minutes} UTC`;
+  try {
+    const day = d.toLocaleDateString("en-IN", { timeZone: timezone, day: "numeric" });
+    const month = d.toLocaleDateString("en-IN", { timeZone: timezone, month: "short" });
+    const year = d.toLocaleDateString("en-IN", { timeZone: timezone, year: "2-digit" });
+    const time = d.toLocaleTimeString("en-IN", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false });
+    
+    const tzLabel = timezone === "Asia/Kolkata" ? "IST" : "Local";
+    return `${day} ${month} ${year}, ${time} ${tzLabel}`;
+  } catch {
+    return d.toUTCString();
+  }
 }
 
 function formatDuration(mins) {
