@@ -1,0 +1,17 @@
+name: Keep Bot Awake (Uptime Robot)
+
+on:
+  schedule:
+    # Run every 10 minutes to keep the Render container awake
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Bot Health Endpoint
+        run: |
+          # Replace the URL below with your actual Render App Health URL
+          # e.g., curl -s https://algobot.onrender.com/health
+          curl -s https://YOUR_RENDER_APP_NAME.onrender.com/health
