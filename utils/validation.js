@@ -58,18 +58,27 @@ export async function sendWithTempMention(channel, content, embeds, roleId) {
   if (!channel) return null;
   
   if (!roleId || !content) {
-    return await channel.send({ content: content || undefined, embeds }).catch(() => null);
+    return await channel.send({ 
+      content: content || undefined, 
+      embeds,
+      allowedMentions: { parse: ["roles", "everyone", "users"] }
+    }).catch(() => null);
   }
 
   const guild = channel.guild;
   if (!guild) {
-    return await channel.send({ content, embeds }).catch(() => null);
+    return await channel.send({ 
+      content, 
+      embeds,
+      allowedMentions: { parse: ["roles", "everyone", "users"] }
+    }).catch(() => null);
   }
 
   const role = guild.roles.cache.get(roleId) || await guild.roles.fetch(roleId).catch(() => null);
   let tempMentionable = false;
 
-  if (role && !role.mentionable && guild.members.me?.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+  // Only try to set mentionable if it is a regular role (not everyone / guild ID role)
+  if (role && role.id !== guild.id && !role.mentionable && guild.members.me?.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
     try {
       await role.setMentionable(true, "Temporary mention for alert");
       tempMentionable = true;
@@ -78,7 +87,11 @@ export async function sendWithTempMention(channel, content, embeds, roleId) {
     }
   }
 
-  const message = await channel.send({ content, embeds }).catch(() => null);
+  const message = await channel.send({ 
+    content, 
+    embeds,
+    allowedMentions: { parse: ["roles", "everyone", "users"] }
+  }).catch(() => null);
 
   if (tempMentionable && role) {
     try {

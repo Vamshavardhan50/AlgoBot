@@ -86,7 +86,12 @@ export default {
     const mention = role ? getRoleMention(role.id, interaction.guildId) : "";
 
     const embed = buildCustomEmbed(draft);
-    await channel.send({ content: mention || undefined, embeds: [embed], files });
+    await channel.send({ 
+      content: mention || undefined, 
+      embeds: [embed], 
+      files,
+      allowedMentions: { parse: ["roles", "everyone", "users"] }
+    });
 
     return safeReply(interaction, {
       content: "Embed sent.",
