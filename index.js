@@ -40,13 +40,14 @@ async function start() {
   initDatabase();
   registerEvents(client);
 
-  if (!env.token) {
-    logger.error("DISCORD_TOKEN is not set.");
-    return;
-  }
-
-  await client.login(env.token);
-  startScheduler(client);
+  // Login to Discord asynchronously so that the web server can still start independently
+  client.login(env.token)
+    .then(() => {
+      startScheduler(client);
+    })
+    .catch((error) => {
+      logger.error(`Discord login failed: ${error.message}`);
+    });
 
   const app = express();
 
@@ -150,6 +151,29 @@ async function start() {
       res.json(potd || []);
     } catch (error) {
       logger.error("API POTD error", error?.message || error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Starboard Leaderboard API
+  app.get("/api/starboard", (_req, res) => {
+    try {
+      const db = getDb();
+      const leaderboard = db.prepare("SELECT * FROM starboard ORDER BY score DESC, wins DESC LIMIT 10").all();
+      const resolved = leaderboard.map(row => {
+        const user = client.users.cache.get(row.user_id);
+        return {
+          userId: row.user_id,
+          username: user ? user.username : `User (${row.user_id.slice(-4)})`,
+          avatar: user ? user.displayAvatarURL() : "https://cdn.discordapp.com/embed/avatars/0.png",
+          wins: row.wins,
+          losses: row.losses,
+          score: row.score,
+        };
+      });
+      res.json(resolved);
+    } catch (error) {
+      logger.error("API Starboard error", error?.message || error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

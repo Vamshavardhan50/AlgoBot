@@ -14,4 +14,4 @@ jobs:
         run: |
           # Replace the URL below with your actual Render App Health URL
           # e.g., curl -s https://algobot.onrender.com/health
-          curl -s https://YOUR_RENDER_APP_NAME.onrender.com/health
+          curl -s https://algobot.onrender.com/health

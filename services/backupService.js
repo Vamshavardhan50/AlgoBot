@@ -18,9 +18,11 @@ export async function restoreDatabaseFromDiscord(client) {
     logger.info("BackupService: Attempting to restore database from Discord...");
     let backupChannel = null;
 
-    // Search all guilds for the backup channel
+    // Search all guilds for the backup channel by fetching channels to bypass startup cache limits
     for (const guild of client.guilds.cache.values()) {
-      const channel = guild.channels.cache.find(
+      const channels = await guild.channels.fetch().catch(() => null);
+      if (!channels) continue;
+      const channel = channels.find(
         (c) => c.name === BACKUP_CHANNEL_NAME && c.isTextBased()
       );
       if (channel) {
@@ -90,9 +92,11 @@ async function runBackup(client) {
     logger.info("BackupService: Running database backup to Discord...");
     let backupChannel = null;
 
-    // Search all guilds for the backup channel
+    // Search all guilds for the backup channel by fetching channels to bypass cache limits
     for (const guild of client.guilds.cache.values()) {
-      const channel = guild.channels.cache.find(
+      const channels = await guild.channels.fetch().catch(() => null);
+      if (!channels) continue;
+      const channel = channels.find(
         (c) => c.name === BACKUP_CHANNEL_NAME && c.isTextBased()
       );
       if (channel) {
@@ -148,7 +152,7 @@ async function runBackup(client) {
     // Upload the file
     logger.info("BackupService: Uploading database file...");
     await backupChannel.send({
-      content: `🔄 **AlgoBot DB Backup** | Date: ${new Date().toUTCString()}`,
+      content: `🔄 **AlgoBot DB Backup** | Date: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
       files: [dbPath]
     });
 

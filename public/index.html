@@ -3,205 +3,300 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AlgoBot Community Dashboard</title>
+  <title>AlgoBot — Discord CP Companion Dashboard</title>
+  
   <!-- SEO Meta Tags -->
-  <meta name="description" content="Connect your competitive programming community with AlgoBot. View active servers, upcoming contests, and the Problem of the Day.">
+  <meta name="description" content="Manage your competitive programming server with AlgoBot. View active servers, upcoming contests, Problem of the Day, and duels leaderboard.">
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/8653/8653200.png">
   
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="./style.css?v=1.0.2">
+  <link rel="stylesheet" href="./style.css?v=1.0.3">
 </head>
-<body>
+<body class="dashboard-body">
 
-  <!-- Background Glow Effects -->
+  <!-- Glow Background Backdrops -->
   <div class="bg-glow bg-glow-1"></div>
   <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-glow bg-glow-3"></div>
 
-  <!-- Header -->
-  <header>
+  <!-- Navigation Header -->
+  <header class="main-header">
     <div class="container navbar">
       <a href="#" class="logo">
-        <i class="fa-solid fa-square-binary glow-text"></i>
-        <span>Algo<span class="gradient-text">Bot</span></span>
+        <div class="logo-icon-wrapper">
+          <i class="fa-solid fa-square-binary glow-text"></i>
+        </div>
+        <span>Algo<span class="gradient-text font-black">Bot</span></span>
       </a>
-      <nav>
-        <a href="#stats" class="nav-link"><i class="fa-solid fa-chart-simple"></i> Stats</a>
-        <a href="#communities" class="nav-link"><i class="fa-solid fa-users"></i> Communities</a>
-        <a href="#contests" class="nav-link"><i class="fa-solid fa-code"></i> Contests</a>
-        <a href="#potd" class="nav-link"><i class="fa-solid fa-calendar-day"></i> POTD</a>
+      
+      <!-- Tab Controls -->
+      <nav class="dashboard-nav">
+        <button class="nav-tab-btn active" onclick="switchTab('tab-home')">
+          <i class="fa-solid fa-house"></i> Home
+        </button>
+        <button class="nav-tab-btn" onclick="switchTab('tab-contests')">
+          <i class="fa-solid fa-trophy"></i> Contests
+        </button>
+        <button class="nav-tab-btn" onclick="switchTab('tab-potd')">
+          <i class="fa-solid fa-fire"></i> POTD
+        </button>
+        <button class="nav-tab-btn" onclick="switchTab('tab-starboard')">
+          <i class="fa-solid fa-ranking-star"></i> Leaderboard
+        </button>
+        <button class="nav-tab-btn" onclick="switchTab('tab-servers')">
+          <i class="fa-solid fa-server"></i> Servers
+        </button>
       </nav>
+      
       <a id="nav-invite-btn" href="#" target="_blank" class="btn btn-primary btn-nav">
-        <i class="fa-brands fa-discord"></i> Add to Discord
+        <i class="fa-brands fa-discord"></i> Invite Bot
       </a>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero-section">
-    <div class="container hero-container">
-      <div class="hero-content">
-        <div class="badge-new">
-          <span class="badge-dot"></span> New: Community Hub Enabled
-        </div>
-        <h1 class="hero-title">
-          Connect Your <br>
-          <span class="gradient-text">Competitive Programming</span> <br>
-          Community
-        </h1>
-        <p class="hero-subtitle">
-          AlgoBot brings contest reminders, problem of the day, and coding resources directly to your Discord server. Join the unified CP network.
-        </p>
-        <div class="hero-buttons">
-          <a id="hero-invite-btn" href="#" target="_blank" class="btn btn-primary btn-large">
-            <i class="fa-brands fa-discord"></i> Add Your Server
-          </a>
-          <a href="#communities" class="btn btn-secondary btn-large">
-            Explore Communities <i class="fa-solid fa-arrow-right"></i>
-          </a>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <div class="console-box">
-          <div class="console-header">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-            <span class="console-title">algobot_status.sh</span>
-          </div>
-          <div class="console-body">
-            <p class="console-line"><span class="c-purple">algo@bot</span>:<span class="c-blue">~</span>$ ./status.sh</p>
-            <p class="console-line c-green">[INFO] Schedulers online: 4 jobs active.</p>
-            <p class="console-line c-green">[INFO] LeetCode POTD Scraped Successfully.</p>
-            <p class="console-line c-cyan">Active Communities: <span id="console-server-count">--</span></p>
-            <p class="console-line c-cyan">Total Members: <span id="console-member-count">--</span></p>
-            <p class="console-line c-yellow">Listening to commands on Discord...</p>
-            <p class="console-line blink">█</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Main Content Wrapper -->
+  <main class="dashboard-container container">
 
-  <!-- Stats Grid -->
-  <section id="stats" class="stats-section">
-    <div class="container">
-      <div class="grid stats-grid">
-        <div class="stat-card card-glow-purple">
-          <div class="stat-icon-wrapper purple">
-            <i class="fa-solid fa-server"></i>
+    <!-- ── TAB: HOME ────────────────────────────────────────────────────── -->
+    <div id="tab-home" class="tab-panel active">
+      <!-- Welcome Banner -->
+      <section class="welcome-banner">
+        <div class="banner-content">
+          <div class="badge-new">
+            <span class="badge-dot"></span> Dynamic Duel Engine & Starboard Online
           </div>
-          <div class="stat-details">
-            <h3 id="stat-servers">--</h3>
-            <p>Servers Configured</p>
-          </div>
-        </div>
-        <div class="stat-card card-glow-blue">
-          <div class="stat-icon-wrapper blue">
-            <i class="fa-solid fa-user-group"></i>
-          </div>
-          <div class="stat-details">
-            <h3 id="stat-members">--</h3>
-            <p>Coders Connected</p>
-          </div>
-        </div>
-        <div class="stat-card card-glow-cyan">
-          <div class="stat-icon-wrapper cyan">
-            <i class="fa-solid fa-trophy"></i>
-          </div>
-          <div class="stat-details">
-            <h3 id="stat-contests">--</h3>
-            <p>Contests Tracked</p>
+          <h1>Empower Your <span class="gradient-text">Coding Server</span></h1>
+          <p>
+            AlgoBot bridges competitive programming platforms and Discord. Automate Daily Problem of the Day alerts, track upcoming contests with pings, and challenge friends to live Codeforces duels.
+          </p>
+          <div class="banner-actions">
+            <a id="hero-invite-btn" href="#" target="_blank" class="btn btn-primary btn-large">
+              <i class="fa-brands fa-discord"></i> Add to Discord
+            </a>
+            <button class="btn btn-secondary btn-large" onclick="switchTab('tab-starboard')">
+              View Leaderboard <i class="fa-solid fa-arrow-right"></i>
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
+        
+        <div class="banner-visual">
+          <!-- Interactive Terminal -->
+          <div class="console-box">
+            <div class="console-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="console-title">algobot_terminal.sh</span>
+            </div>
+            <div class="console-body">
+              <p class="console-line"><span class="c-purple">algobot@v1.0.3</span>:<span class="c-blue">~</span>$ ./fetch-status</p>
+              <p class="console-line c-green">[READY] BackupService restored database from Discord channel successfully.</p>
+              <p class="console-line c-green">[READY] Schedulers initialized: 05:30 Scrape, 06:00 Alerts, 3-hour POTD Reminders.</p>
+              <p class="console-line c-cyan">Connected Guilds: <span id="console-server-count">--</span></p>
+              <p class="console-line c-cyan">Total Server Members: <span id="console-member-count">--</span></p>
+              <p class="console-line c-yellow">Prefix handlers active with Content Intent: [!]</p>
+              <p class="console-line blink">█</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-  <!-- Communities Section -->
-  <section id="communities" class="section">
-    <div class="container">
-      <div class="section-header">
+      <!-- Stats Metrics Cards -->
+      <section class="stats-panel">
+        <div class="grid stats-grid">
+          <div class="stat-card card-glow-purple" onclick="switchTab('tab-servers')">
+            <div class="stat-icon-wrapper purple">
+              <i class="fa-solid fa-server"></i>
+            </div>
+            <div class="stat-details">
+              <h3 id="stat-servers">--</h3>
+              <p>Active Servers</p>
+            </div>
+          </div>
+          <div class="stat-card card-glow-blue" onclick="switchTab('tab-starboard')">
+            <div class="stat-icon-wrapper blue">
+              <i class="fa-solid fa-user-group"></i>
+            </div>
+            <div class="stat-details">
+              <h3 id="stat-members">--</h3>
+              <p>Registered Coders</p>
+            </div>
+          </div>
+          <div class="stat-card card-glow-cyan" onclick="switchTab('tab-contests')">
+            <div class="stat-icon-wrapper cyan">
+              <i class="fa-solid fa-calendar-days"></i>
+            </div>
+            <div class="stat-details">
+              <h3 id="stat-contests">--</h3>
+              <p>Contests Scheduled</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Checklist Grid -->
+      <section class="features-section">
+        <h2 class="section-title text-center">Core <span class="gradient-text font-bold">Bot Features</span></h2>
+        <div class="grid features-grid">
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-calendar-check"></i></div>
+            <h4>Grouped Contest Tracks</h4>
+            <p>Automatically fetches schedules from LeetCode, Codeforces, CodeChef, and AtCoder. Groups starting alerts in a single message to prevent clutter.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-fire"></i></div>
+            <h4>Problems of the Day</h4>
+            <p>Daily scrapes from GeeksforGeeks, LeetCode, and Codeforces. Prepend flirty lines generated dynamically via Groq API models.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-swords"></i></div>
+            <h4>Codeforces Duels</h4>
+            <p>Challenge server members to solve specific problems within a time limit. Auto-verifies submission status live via Codeforces APIs.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <h4>Discord DB Persistence</h4>
+            <p>Persistent SQLite database backups pushed directly to private Discord logs. Never lose configurations or scoreboard stats on Render restarts.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ── TAB: CONTESTS ────────────────────────────────────────────────── -->
+    <div id="tab-contests" class="tab-panel">
+      <div class="section-header-row">
         <div>
-          <h2 class="section-title">Active <span class="gradient-text">Communities</span></h2>
-          <p class="section-subtitle">Servers running AlgoBot and actively receiving alerts</p>
+          <h2>🏆 Upcoming <span class="gradient-text">Coding Contests</span></h2>
+          <p>Competitive programming calendars updated in real-time</p>
+        </div>
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+          <button class="filter-btn active" onclick="filterContests('All')">All</button>
+          <button class="filter-btn" onclick="filterContests('LeetCode')">LeetCode</button>
+          <button class="filter-btn" onclick="filterContests('Codeforces')">Codeforces</button>
+          <button class="filter-btn" onclick="filterContests('CodeChef')">CodeChef</button>
+          <button class="filter-btn" onclick="filterContests('AtCoder')">AtCoder</button>
+        </div>
+      </div>
+
+      <div class="card-glow-purple panel-card">
+        <div id="contests-list" class="contests-grid-view">
+          <div class="loader-container">
+            <div class="spinner"></div>
+            <p>Fetching schedules...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: POTD ────────────────────────────────────────────────────── -->
+    <div id="tab-potd" class="tab-panel">
+      <div class="section-header-row">
+        <div>
+          <h2>🔥 Problems <span class="gradient-text">Of The Day</span></h2>
+          <p>Daily programming challenges curated from top platforms</p>
+        </div>
+      </div>
+
+      <div id="potd-container" class="potd-grid-layout">
+        <div class="loader-container">
+          <div class="spinner"></div>
+          <p>Scraping today's challenges...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: STARBOARD LEADERBOARD ────────────────────────────────────── -->
+    <div id="tab-starboard" class="tab-panel">
+      <div class="section-header-row">
+        <div>
+          <h2>⚔️ Duelist <span class="gradient-text">Starboard</span></h2>
+          <p>Standings of competitive programming duel challenges in this server</p>
+        </div>
+      </div>
+
+      <div class="card-glow-cyan panel-card">
+        <div class="table-responsive">
+          <table class="starboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Coder</th>
+                <th>Score</th>
+                <th>Wins</th>
+                <th>Losses</th>
+                <th>Win Rate</th>
+              </tr>
+            </thead>
+            <tbody id="starboard-list">
+              <!-- Loader -->
+              <tr>
+                <td colspan="6">
+                  <div class="loader-container">
+                    <div class="spinner"></div>
+                    <p>Fetching server standings...</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: SERVERS ─────────────────────────────────────────────────── -->
+    <div id="tab-servers" class="tab-panel">
+      <div class="section-header-row">
+        <div>
+          <h2>⚙️ Configured <span class="gradient-text">Discord Communities</span></h2>
+          <p>Active servers currently running AlgoBot alerts and setups</p>
         </div>
         <a id="section-invite-btn" href="#" target="_blank" class="btn btn-secondary">
-          <i class="fa-solid fa-plus"></i> Add Your Server
+          <i class="fa-solid fa-plus"></i> Add Server
         </a>
       </div>
 
-      <div id="communities-grid" class="grid communities-grid">
-        <!-- Loader -->
+      <div id="communities-grid" class="grid communities-grid-layout">
         <div class="loader-container">
           <div class="spinner"></div>
-          <p>Loading communities...</p>
+          <p>Querying bot guilds...</p>
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- Split View: Contests and POTD -->
-  <section class="section split-section">
-    <div class="container split-grid">
-      
-      <!-- Left: Contests -->
-      <div id="contests" class="split-col card-glow-purple">
-        <div class="split-card-header">
-          <h3><i class="fa-solid fa-trophy gradient-text"></i> Upcoming Contests</h3>
-          <p>Competitive programming schedules</p>
-        </div>
-        <div id="contests-list" class="split-card-body">
-          <div class="loader-container">
-            <div class="spinner"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: POTD -->
-      <div id="potd" class="split-col card-glow-cyan">
-        <div class="split-card-header">
-          <h3><i class="fa-solid fa-calendar-day gradient-text"></i> Problem of the Day</h3>
-          <p>Today's featured daily challenge</p>
-        </div>
-        <div id="potd-container" class="split-card-body">
-          <div class="loader-container">
-            <div class="spinner"></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
+  </main>
 
   <!-- Footer -->
-  <footer>
-    <div class="container footer-container">
+  <footer class="dashboard-footer">
+    <div class="container footer-content">
       <div class="footer-left">
         <div class="logo">
           <i class="fa-solid fa-square-binary glow-text"></i>
-          <span>Algo<span class="gradient-text">Bot</span></span>
+          <span>Algo<span class="gradient-text font-black">Bot</span></span>
         </div>
-        <p>Providing real-time competitive programming insights to active Discord communities.</p>
+        <p>Your ultimate competitive programming assistant for Discord. Set up alerts, track contests, and duel with peers.</p>
       </div>
-      <div class="footer-links">
-        <a href="#stats">Stats</a>
-        <a href="#communities">Communities</a>
-        <a href="#contests">Contests</a>
-        <a href="#potd">POTD</a>
+      
+      <div class="footer-center">
+        <span onclick="switchTab('tab-home')">Home</span>
+        <span onclick="switchTab('tab-contests')">Contests</span>
+        <span onclick="switchTab('tab-potd')">POTD</span>
+        <span onclick="switchTab('tab-starboard')">Starboard</span>
       </div>
+      
       <div class="footer-right">
-        <p>&copy; 2026 AlgoBot Community. Powered by Discord.js.</p>
+        <p>&copy; 2026 AlgoBot Network. Powered by Discord.js and SQLite.</p>
       </div>
     </div>
   </footer>
 
   <!-- Javascript -->
-  <script src="./app.js?v=1.0.2"></script>
+  <script src="./app.js?v=1.0.3"></script>
 </body>
 </html>
