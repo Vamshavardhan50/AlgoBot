@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import Database from "better-sqlite3";
 import axios from "axios";
 import { env } from "../config/constants.js";
 import { logger } from "../utils/logger.js";
@@ -32,8 +33,7 @@ export async function restoreDatabaseFromDiscord(client) {
     }
 
     if (!backupChannel) {
-      logger.info("BackupService: No backup channel found on Discord. Starting with a clean database.");
-      // Ensure database is initialized
+      logger.info("BackupService: No backup channel found on Discord.");
       initDatabase();
       return;
     }
@@ -45,13 +45,45 @@ export async function restoreDatabaseFromDiscord(client) {
     );
 
     if (!backupMessage) {
-      logger.info("BackupService: Backup channel exists but no database attachment was found. Starting clean.");
+      logger.info("BackupService: Backup channel exists but no database attachment was found.");
       initDatabase();
       return;
     }
 
+    const dbPath = path.resolve(env.dbPath);
+    const backupTime = new Date(backupMessage.createdAt).getTime();
+
+    // Check if local database exists and has meaningful data
+    if (fs.existsSync(dbPath)) {
+      let localTime = 0;
+      try {
+        const tempDb = new Database(dbPath);
+        tempDb.pragma("journal_mode = WAL");
+        const row = tempDb.prepare("SELECT COUNT(*) as count, MAX(updated_at) as latest FROM guild_configs").get();
+        tempDb.close();
+
+        if ((row?.count || 0) > 0) {
+          localTime = row.latest ? new Date(row.latest).getTime() : 0;
+
+          if (localTime >= backupTime) {
+            logger.info("BackupService: Local database is up-to-date or newer than backup. Skipping restore.");
+            initDatabase();
+            return;
+          }
+
+          logger.info(`BackupService: Backup (${new Date(backupTime).toISOString()}) is newer than local (${new Date(localTime).toISOString()}). Restoring...`);
+        } else {
+          logger.info("BackupService: Local database is empty. Restoring from backup...");
+        }
+      } catch {
+        logger.info("BackupService: Could not read local database. Restoring from backup...");
+      }
+    } else {
+      logger.info("BackupService: No local database found. Restoring from backup...");
+    }
+
     const attachment = backupMessage.attachments.find((a) => a.name === "algobot.db");
-    logger.info(`BackupService: Found backup from ${backupMessage.createdAt}. Downloading...`);
+    logger.info(`BackupService: Downloading backup from ${backupMessage.createdAt}...`);
 
     // Download the attachment using axios
     const response = await axios.get(attachment.url, { responseType: "arraybuffer" });
@@ -59,7 +91,6 @@ export async function restoreDatabaseFromDiscord(client) {
     // Close active DB, overwrite file, and re-initialize DB
     closeDatabase();
     
-    const dbPath = path.resolve(env.dbPath);
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     fs.writeFileSync(dbPath, Buffer.from(response.data));
     

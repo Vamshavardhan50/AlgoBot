@@ -6,18 +6,38 @@ import {
   storeFetchedContests,
 } from "./contestService.js";
 import { sendDailyPotd, ensureTodayPotd, sendPotdReminder } from "./potdService.js";
+import { sendJobAlerts } from "./jobScraper.js";
 import { logger } from "../utils/logger.js";
 
+function parseTime(str) {
+  const parts = (str || "06:00").split(":").map(Number);
+  return { hour: parts[0] || 6, minute: parts[1] || 0 };
+}
+
+function toCron(minute, hour) {
+  return `${minute} ${hour} * * *`;
+}
+
+function subtractMinutes(hour, minute, offset) {
+  let total = hour * 60 + minute - offset;
+  if (total < 0) total += 1440;
+  return { hour: Math.floor(total / 60) % 24, minute: total % 60 };
+}
+
 export function startScheduler(client) {
-  // 1. Daily Scraping Job at 05:30 AM
+  const contestTime = parseTime(env.contestAlertTime);
+  const potdTime = parseTime(env.potdAlertTime);
+  const scrapeTime = subtractMinutes(contestTime.hour, contestTime.minute, 30);
+
+  // 1. Daily Scraping Job (30 min before contest alert)
   cron.schedule(
-    "30 5 * * *",
+    toCron(scrapeTime.minute, scrapeTime.hour),
     async () => {
       try {
         logger.info("Scheduler: Starting morning scrape for contests and POTD...");
         const contestResult = await storeFetchedContests("system");
         logger.info(`Scheduler: Scraped and stored ${contestResult.total} contests (${contestResult.inserted} new).`);
-        
+
         const potdResult = await ensureTodayPotd();
         if (potdResult && potdResult.length) {
           logger.info(`Scheduler: Scraped and stored ${potdResult.length} POTD challenges.`);
@@ -31,22 +51,35 @@ export function startScheduler(client) {
     { timezone: env.timezone },
   );
 
-  // 2. Daily Morning Alerts at 06:00 AM
+  // 2. Daily Contest Alerts
   cron.schedule(
-    "0 6 * * *",
+    toCron(contestTime.minute, contestTime.hour),
     async () => {
       try {
-        logger.info("Scheduler: Sending morning alerts...");
+        logger.info("Scheduler: Sending contest alerts...");
         await sendDailyContestAlerts(client);
-        await sendDailyPotd(client, "morning");
       } catch (error) {
-        logger.error("Scheduler: Morning alerts job failed", error?.message || error);
+        logger.error("Scheduler: Contest alerts job failed", error?.message || error);
       }
     },
     { timezone: env.timezone },
   );
 
-  // 3. Daily Evening POTD Alert at 08:00 PM (20:00)
+  // 3. Daily Morning POTD Alert
+  cron.schedule(
+    toCron(potdTime.minute, potdTime.hour),
+    async () => {
+      try {
+        logger.info("Scheduler: Sending morning POTD alerts...");
+        await sendDailyPotd(client, "morning");
+      } catch (error) {
+        logger.error("Scheduler: Morning POTD job failed", error?.message || error);
+      }
+    },
+    { timezone: env.timezone },
+  );
+
+  // 4. Daily Evening POTD Alert at 20:00
   cron.schedule(
     "0 20 * * *",
     async () => {
@@ -60,7 +93,21 @@ export function startScheduler(client) {
     { timezone: env.timezone },
   );
 
-  // 4. Contest Reminders Check Every 5 Minutes
+  // 5. Daily Job Alerts at 12:00
+  cron.schedule(
+    "0 12 * * *",
+    async () => {
+      try {
+        logger.info("Scheduler: Sending job alerts...");
+        await sendJobAlerts(client);
+      } catch (error) {
+        logger.error("Scheduler: Job alerts job failed", error?.message || error);
+      }
+    },
+    { timezone: env.timezone },
+  );
+
+  // 7. Contest Reminders Check Every 5 Minutes
   cron.schedule(
     "*/5 * * * *",
     async () => {
@@ -73,7 +120,7 @@ export function startScheduler(client) {
     { timezone: env.timezone },
   );
 
-  // 5. POTD Flirty Reminders every 3 hours
+  // 8. POTD Flirty Reminders every 3 hours
   cron.schedule(
     "0 */3 * * *",
     async () => {
@@ -87,5 +134,5 @@ export function startScheduler(client) {
     { timezone: env.timezone },
   );
 
-  logger.info("Schedulers initialized: 05:30 AM scraping, 06:00 AM alerts, 08:00 PM evening alerts, 5-minute pings, 3-hour flirty pings.");
+  logger.info(`Scheduler initialized: scrape at ${String(scrapeTime.hour).padStart(2, "0")}:${String(scrapeTime.minute).padStart(2, "0")}, contest alerts at ${env.contestAlertTime}, POTD at ${env.potdAlertTime} and 20:00, job alerts at 12:00, 5-min reminders, 3-hour pings.`);
 }

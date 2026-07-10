@@ -3,39 +3,45 @@ import { env } from "../config/constants.js";
 import { logger } from "../utils/logger.js";
 
 const fallbackFlirtingLinesPotd = [
-  "Did you forget to solve the POTD today, or were you just waiting for me to remind you? 😉",
-  "Are you ignoring the POTD, or just trying to play hard to get with today's challenge? 💻✨",
-  "Code is temporary, but the chemistry of us solving the POTD is forever. Don't forget today's challenge! 🧪💕",
-  "Just checking if you solved today's POTD, because you're definitely the solution to my bugs. 🐞❤️",
-  "If solving today's POTD is hard, remember I'm here to cheer you on. Go crush it! 🚀😘",
-  "Did you forget today's POTD? I promise solving it is almost as rewarding as talking to me. 😏",
-  "My console is hot, but not as hot as you solving today's POTD. Don't leave it pending! 💻🔥"
+  "POTD time, cutie! 💻",
+  "Your daily problem awaits 💕",
+  "Today's POTD is calling 😘",
+  "Solve it for me? 🚀",
+  "Don't ghost the POTD 💻",
+  "POTD reminder, gorgeous ✨",
+  "One problem, one smile 😊",
+  "POTD is lonely without you",
+  "Click, code, conquer 💪",
+  "Brain teaser for you 🧠",
 ];
 
 const fallbackFlirtingLinesContest = [
-  "Are you ready to show off your coding skills in today's contests, or should I just admire you from here? 😏",
-  "Don't keep today's contests waiting. You know how much I love seeing you at the top of the leaderboard. 🏆💖",
-  "Upcoming contests today! Let's see if your code is as smooth as your charm. 💻✨",
-  "Ready to submit some code and capture my heart in today's contests? 🚀💕",
-  "Just a sweet reminder about today's contests. I'll be cheering for you with every single submission! 📣❤️"
+  "Contest mode: activate! 🏆",
+  "Show them what you got 😏",
+  "Your fans await, coder! 🚀",
+  "Lock in and level up 💻",
+  "Time to flex those skills",
+  "Dominate today's contest 😎",
+  "Coding with style today ✨",
+  "Champions start here 🏆",
+  "Ready. Set. Code. 💻",
+  "Your arena is ready 👑",
 ];
 
 export async function generateFlirtyReminder(type = "potd") {
   if (!env.groqApiKey) {
-    logger.error("❌ GROQ_API_KEY / GROK_API_KEY is not configured in the environment variables!");
-    if (type === "potd") {
-      return "⚠️ **Groq API Key is not set!** Please add `GROQ_API_KEY` or `GROK_API_KEY` in your Render Environment Variables to enable dynamic flirting lines.";
-    }
+    logger.warn("GROQ_API_KEY / GROK_API_KEY not set, using fallback flirty lines.");
     return getRandomFallbackLine(type);
   }
 
+  const seed = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const systemPrompt = type === "contest"
-    ? "You are a charming, witty, and slightly flirty AI assistant. Write a short, single-sentence flirty reminder for college students/coders asking if they are ready for today's upcoming competitive programming (CP) contests. Keep it fun, lighthearted, and flirty, under 120 characters. Do not use quotes in the output."
-    : "You are a charming, witty, and slightly flirty AI assistant. Write a short, single-sentence flirty reminder for college students/coders asking if they forgot to solve today's LeetCode/CP Problem of the Day (POTD). Keep it fun, lighthearted, and flirty, under 120 characters. Do not use quotes in the output.";
+    ? "You are a charming, flirty AI. Write ONE short flirty line (max 20 chars) reminding coders about today's contest. No quotes."
+    : "You are a charming, flirty AI. Write ONE short flirty line (max 20 chars) reminding about today's POTD. No quotes.";
   
-  const userPrompt = type === "contest"
-    ? "Generate one flirty line to remind users about today's upcoming coding contests."
-    : "Generate one flirty line to remind users about today's daily POTD.";
+  const userPrompt = (type === "contest"
+    ? "Generate one flirty line to remind users about today's upcoming coding contests. (seed: "
+    : "Generate one flirty line to remind users about today's daily POTD. (seed: ") + seed + ")";
 
   const models = ["llama-3.3-70b-versatile", "llama3-8b-8192", "mixtral-8x7b-32768"];
 
@@ -71,10 +77,7 @@ export async function generateFlirtyReminder(type = "potd") {
     }
   }
 
-  logger.error(`❌ All Groq API models failed to generate flirting lines for ${type}.`);
-  if (type === "potd") {
-    return "⚠️ **Groq API call failed!** Please verify your API key and check the server logs for detailed errors.";
-  }
+  logger.warn(`All Groq models failed for ${type}, using fallback flirty line.`);
   return getRandomFallbackLine(type);
 }
 

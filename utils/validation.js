@@ -41,11 +41,19 @@ export function ensureGuild(interaction) {
 export function formatDateTime(date, timeZone) {
   const value = typeof date === "string" ? new Date(date) : date;
   if (!value || Number.isNaN(value.getTime())) return "Unknown";
-  return value.toLocaleString("en-IN", {
-    timeZone,
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const tz = timeZone || "Asia/Kolkata";
+  try {
+    return value.toLocaleString("en-IN", {
+      timeZone: tz,
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return value.toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }
 }
 
 export function getRoleMention(roleId, guildId) {

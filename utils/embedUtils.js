@@ -19,16 +19,17 @@ function getContestSlug(link) {
 function formatContestDate(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return "Unknown Date";
-  
+
   const timezone = env.timezone || "Asia/Kolkata";
-  
+
   try {
-    const day = d.toLocaleDateString("en-IN", { timeZone: timezone, day: "numeric" });
-    const month = d.toLocaleDateString("en-IN", { timeZone: timezone, month: "short" });
-    const year = d.toLocaleDateString("en-IN", { timeZone: timezone, year: "2-digit" });
-    const time = d.toLocaleTimeString("en-IN", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false });
-    
-    const tzLabel = timezone === "Asia/Kolkata" ? "IST" : "Local";
+    const opts = { timeZone: timezone };
+    const day = d.toLocaleDateString("en-CA", { ...opts, day: "numeric" });
+    const month = d.toLocaleDateString("en-CA", { ...opts, month: "short" });
+    const year = d.toLocaleDateString("en-CA", { ...opts, year: "2-digit" });
+    const time = d.toLocaleTimeString("en-CA", { ...opts, hour: "2-digit", minute: "2-digit", hour12: false });
+
+    const tzLabel = timezone === "Asia/Kolkata" ? "IST" : timezone.split("/").pop() || "Local";
     return `${day} ${month} ${year}, ${time} ${tzLabel}`;
   } catch {
     return d.toUTCString();
@@ -141,6 +142,64 @@ export function buildCustomEmbed(draft) {
 
   if (draft.description) {
     embed.setDescription(draft.description);
+  }
+
+  return embed;
+}
+
+export function buildJobEmbed({ title, description, applyLink, categories, date, url }) {
+  const emojiMap = {
+    Freshers: "🎓",
+    Experienced: "💼",
+    Internships: "📋",
+    Remote: "🏠",
+    Hackathons: "⚡",
+    Trainee: "📚",
+  };
+
+  const categoryStr = categories
+    .map((c) => `${emojiMap[c] || "📌"} ${c}`)
+    .join(" | ");
+
+  const lines = ["📢 **New Job Opportunity**", ""];
+
+  if (categoryStr) {
+    lines.push(categoryStr);
+    lines.push("");
+  }
+
+  lines.push(`**${title}**`);
+  lines.push("");
+
+  if (description) {
+    const clean = description.replace(/<[^>]*>/g, "").trim();
+    const truncated = clean.length > 250 ? clean.slice(0, 250) + "…" : clean;
+    lines.push(truncated);
+    lines.push("");
+  }
+
+  if (url) {
+    lines.push(`[View Details ↗](${url})`);
+  }
+
+  if (applyLink) {
+    lines.push(`[Apply Now ↗](${applyLink})`);
+  }
+
+  let color = 0x00b894;
+  if (categories.includes("Internships")) color = 0x00cec9;
+  else if (categories.includes("Experienced")) color = 0x6c5ce7;
+  else if (categories.includes("Remote")) color = 0xfdcb6e;
+  else if (categories.includes("Hackathons")) color = 0xe17055;
+  else if (categories.includes("Trainee")) color = 0x0984e3;
+
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setDescription(lines.join("\n"))
+    .setTimestamp();
+
+  if (date) {
+    embed.setFooter({ text: `Posted: ${date}` });
   }
 
   return embed;

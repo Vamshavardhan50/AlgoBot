@@ -10,8 +10,10 @@ function rowToConfig(row) {
     potdChannelId: row.potd_channel_id,
     potdRoleId: row.potd_role_id,
     resourceChannelId: row.resource_channel_id,
+    jobChannelId: row.job_channel_id,
     lastContestAlertAt: row.last_contest_alert_at || "",
     lastPotdSentAt: row.last_potd_sent_at || "",
+    lastJobSentAt: row.last_job_sent_at || "",
   };
 }
 
@@ -21,8 +23,10 @@ const COLUMN_MAP = {
   potdChannelId: "potd_channel_id",
   potdRoleId: "potd_role_id",
   resourceChannelId: "resource_channel_id",
+  jobChannelId: "job_channel_id",
   lastContestAlertAt: "last_contest_alert_at",
   lastPotdSentAt: "last_potd_sent_at",
+  lastJobSentAt: "last_job_sent_at",
 };
 
 export function ensureGuildConfig(guildId) {

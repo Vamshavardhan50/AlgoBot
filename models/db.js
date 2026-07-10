@@ -23,8 +23,10 @@ export function initDatabase() {
       potd_channel_id TEXT DEFAULT '',
       potd_role_id TEXT DEFAULT '',
       resource_channel_id TEXT DEFAULT '',
+      job_channel_id TEXT DEFAULT '',
       last_contest_alert_at TEXT DEFAULT '',
       last_potd_sent_at TEXT DEFAULT '',
+      last_job_sent_at TEXT DEFAULT '',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );

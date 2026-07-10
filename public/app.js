@@ -1,27 +1,21 @@
 const API_BASE = window.location.protocol === "file:" ? "http://localhost:3005" : "";
 const FALLBACK_INVITE = "https://discord.com/api/oauth2/authorize?client_id=1502741879211425792&permissions=8&scope=bot%20applications.commands";
 
-// Global cache for dynamic filtering
 let cachedContests = [];
 let activeContestFilter = "All";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Set initial fallback invite URLs
   setInviteUrls(FALLBACK_INVITE);
-  
-  // Fetch initial APIs
   fetchInviteLink();
   fetchStats();
   fetchServers();
   fetchContests();
   fetchPotd();
   fetchStarboard();
-
-  // Handle URL hashes if users navigate directly
+  fetchJobs();
   handleHashTab();
 });
 
-// Helper: Format large numbers with commas safely
 function formatNumber(num) {
   if (num === undefined || num === null) return "0";
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -36,344 +30,241 @@ function getFriendlyErrorMessage(error) {
 }
 
 function setInviteUrls(url) {
-  const btnIds = ["nav-invite-btn", "hero-invite-btn", "section-invite-btn"];
-  btnIds.forEach(id => {
+  ["nav-invite-btn", "hero-invite-btn", "section-invite-btn"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.href = url;
   });
 }
 
-// 1. Tab Switching Logic
+// ── Tabs ────────────────────────────────────────────────
 window.switchTab = function(tabId) {
-  // Hide all panels
-  const panels = document.querySelectorAll(".tab-panel");
-  panels.forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(p => p.classList.remove("active"));
+  const panel = document.getElementById("tab-" + tabId);
+  if (panel) panel.classList.add("active");
 
-  // Show selected panel
-  const targetPanel = document.getElementById(tabId);
-  if (targetPanel) targetPanel.classList.add("active");
-
-  // Update navbar active state
-  const tabBtns = document.querySelectorAll(".nav-tab-btn");
-  tabBtns.forEach(btn => {
+  document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.classList.remove("active");
-    // Match based on button function arguments
     if (btn.getAttribute("onclick")?.includes(tabId)) {
       btn.classList.add("active");
     }
   });
 
-  // Track tab hash in browser URL
-  window.location.hash = tabId.replace("tab-", "");
+  window.location.hash = tabId;
 };
 
 function handleHashTab() {
   const hash = window.location.hash.replace("#", "");
-  if (hash) {
-    const panelId = `tab-${hash}`;
-    if (document.getElementById(panelId)) {
-      window.switchTab(panelId);
-    }
+  if (hash && document.getElementById("tab-" + hash)) {
+    window.switchTab(hash);
   }
 }
 
-// 2. Fetch Invite Link
+// ── Invite Link ─────────────────────────────────────────
 async function fetchInviteLink() {
   try {
     const res = await fetch(`${API_BASE}/api/bot-invite`);
     const data = await res.json();
-    if (data && data.url) {
-      setInviteUrls(data.url);
-    }
-  } catch (error) {
-    console.warn("Using fallback invite link due to fetch issue:", error);
-  }
+    if (data && data.url) setInviteUrls(data.url);
+  } catch (e) { console.warn("Using fallback invite link"); }
 }
 
-// 3. Fetch Dashboard Statistics
+// ── Stats ───────────────────────────────────────────────
 async function fetchStats() {
   try {
     const res = await fetch(`${API_BASE}/api/stats`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    
     document.getElementById("stat-servers").innerText = formatNumber(data.servers || 0);
     document.getElementById("stat-members").innerText = formatNumber(data.members || 0);
     document.getElementById("stat-contests").innerText = formatNumber(data.contestsTracked || 0);
-    
-    // Console visual counts
-    document.getElementById("console-server-count").innerText = data.servers || 0;
-    document.getElementById("console-member-count").innerText = formatNumber(data.members || 0);
-  } catch (error) {
-    console.error("Failed to fetch stats:", error);
-  }
+    document.getElementById("console-servers").innerText = data.servers || 0;
+    document.getElementById("console-members").innerText = formatNumber(data.members || 0);
+  } catch (e) { console.error("Stats fetch failed:", e); }
 }
 
-// 4. Fetch Active Communities (Servers)
+// ── Servers ─────────────────────────────────────────────
 async function fetchServers() {
-  const grid = document.getElementById("communities-grid");
+  const grid = document.getElementById("servers-grid");
   try {
     const res = await fetch(`${API_BASE}/api/servers`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const servers = await res.json();
-    if (!Array.isArray(servers)) throw new Error("Invalid response format");
-    
+    if (!Array.isArray(servers)) throw new Error("Invalid response");
+
     if (servers.length === 0) {
-      grid.innerHTML = `
-        <div class="no-potd-msg" style="grid-column: 1 / -1;">
-          <i class="fa-solid fa-circle-info" style="font-size: 2rem; margin-bottom: 12px; color: var(--color-primary);"></i>
-          <p>No active communities yet. Invite AlgoBot to your server to see it here!</p>
-        </div>
-      `;
+      grid.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-info" style="font-size:1.5rem;margin-bottom:8px;display:block"></i>No active servers yet. Invite AlgoBot to your server!</div>`;
       return;
     }
-    
-    grid.innerHTML = servers.map(server => {
-      if (!server) return "";
-      const serverName = server.name || "Unnamed Server";
-      const memberCount = server.memberCount || 0;
-      const initials = serverName.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
-      
-      const iconHTML = server.iconUrl 
-        ? `<img class="server-icon" src="${server.iconUrl}" alt="${serverName}" onerror="this.outerHTML='<div class=&quot;server-icon&quot;>${initials}</div>'">`
+
+    grid.innerHTML = servers.map(s => {
+      if (!s) return "";
+      const name = s.name || "Unnamed Server";
+      const members = s.memberCount || 0;
+      const initials = name.split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase();
+      const icon = s.iconUrl
+        ? `<img class="server-icon" src="${s.iconUrl}" alt="${name}" onerror="this.outerHTML='<div class=\\'server-icon\\'>${initials}</div>'">`
         : `<div class="server-icon">${initials}</div>`;
-      
-      const contestBadge = server.contestChannel && server.contestChannel !== "Not Configured"
-        ? `<span class="badge badge-active"><i class="fa-solid fa-hashtag"></i> ${server.contestChannel}</span>`
-        : `<span class="badge badge-disabled">Disabled</span>`;
-        
-      const potdBadge = server.potdChannel && server.potdChannel !== "Not Configured"
-        ? `<span class="badge badge-active"><i class="fa-solid fa-hashtag"></i> ${server.potdChannel}</span>`
-        : `<span class="badge badge-disabled">Disabled</span>`;
- 
-      const resourceBadge = server.resourceChannel && server.resourceChannel !== "Not Configured"
-        ? `<span class="badge badge-active"><i class="fa-solid fa-hashtag"></i> ${server.resourceChannel}</span>`
-        : `<span class="badge badge-disabled">Disabled</span>`;
- 
-      return `
-        <div class="community-card">
-          <div class="community-header">
-            ${iconHTML}
-            <div class="server-info">
-              <h4>${serverName}</h4>
-              <div class="member-count">
-                <i class="fa-solid fa-user-group"></i>
-                <span>${formatNumber(memberCount)} members</span>
-              </div>
-            </div>
-          </div>
-          <div class="channel-configs">
-            <div class="config-item">
-              <span class="config-label"><i class="fa-solid fa-trophy"></i> Contests</span>
-              ${contestBadge}
-            </div>
-            <div class="config-item">
-              <span class="config-label"><i class="fa-solid fa-calendar-day"></i> POTD</span>
-              ${potdBadge}
-            </div>
-            <div class="config-item">
-              <span class="config-label"><i class="fa-solid fa-book"></i> Resources</span>
-              ${resourceBadge}
-            </div>
-          </div>
+
+      return `<div class="server-card">
+        <div class="server-head">
+          ${icon}
+          <div><h4>${name}</h4><p><i class="fa-solid fa-user-group"></i> ${formatNumber(members)} members</p></div>
         </div>
-      `;
+      </div>`;
     }).join("");
-  } catch (error) {
-    console.error("Failed to fetch communities list:", error);
-    grid.innerHTML = `
-      <div class="no-potd-msg" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
-        <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: var(--color-error); margin-bottom: 12px;"></i>
-        <p style="font-weight: 600; margin-bottom: 4px;">Failed to load active communities.</p>
-        <span style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">${getFriendlyErrorMessage(error)}</span>
-      </div>
-    `;
+  } catch (e) {
+    console.error("Servers fetch failed:", e);
+    grid.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation" style="font-size:1.2rem;margin-bottom:6px;display:block"></i>Failed to load servers.<br><span style="font-size:.8rem">${getFriendlyErrorMessage(e)}</span></div>`;
   }
 }
 
-// 5. Fetch Upcoming Contests
+// ── Contests ────────────────────────────────────────────
 async function fetchContests() {
   const container = document.getElementById("contests-list");
   try {
     const res = await fetch(`${API_BASE}/api/contests`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("Invalid response format");
+    if (!Array.isArray(data)) throw new Error("Invalid response");
     cachedContests = data;
     renderContestGrid();
-  } catch (error) {
-    console.error("Failed to fetch contests:", error);
-    container.innerHTML = `
-      <div class="no-potd-msg" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
-        <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: var(--color-error); margin-bottom: 12px;"></i>
-        <p style="font-weight: 600; margin-bottom: 4px;">Failed to load upcoming contests.</p>
-        <span style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">${getFriendlyErrorMessage(error)}</span>
-      </div>
-    `;
+  } catch (e) {
+    console.error("Contests fetch failed:", e);
+    container.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation" style="font-size:1.2rem;margin-bottom:6px;display:block"></i>Failed to load contests.<br><span style="font-size:.8rem">${getFriendlyErrorMessage(e)}</span></div>`;
   }
 }
 
-// Helper: Render filtered contests
 function renderContestGrid() {
   const container = document.getElementById("contests-list");
   let list = cachedContests;
-  
   if (activeContestFilter !== "All") {
     list = cachedContests.filter(c => c.platform === activeContestFilter);
   }
-
   if (!list || list.length === 0) {
-    container.innerHTML = `<p class="no-potd-msg" style="grid-column: 1 / -1;">No upcoming ${activeContestFilter !== "All" ? activeContestFilter : ""} contests scheduled.</p>`;
+    container.innerHTML = `<div class="empty">No ${activeContestFilter !== "All" ? activeContestFilter + " " : ""}contests scheduled.</div>`;
     return;
   }
-
-  container.innerHTML = list.map(contest => {
-    const platformClass = `platform-${contest.platform.toLowerCase()}`;
-    return `
-      <div class="contest-item">
+  container.innerHTML = list.map(c => `<div class="contest-card">
+    <div class="contest-row">
+      <div>
+        <div class="contest-name" title="${c.contestName}">${c.contestName}</div>
         <div class="contest-meta">
-          <div class="contest-name" title="${contest.contestName}">${contest.contestName}</div>
-          <div class="contest-sub">
-            <span class="platform-pill ${platformClass}">${contest.platform}</span>
-            <span class="contest-time"><i class="fa-regular fa-clock"></i> ${contest.contestTime}</span>
-          </div>
+          <span class="platform-tag">${c.platform}</span>
+          <span><i class="fa-regular fa-clock"></i> ${c.contestTime}</span>
         </div>
-        <a href="${contest.contestLink}" target="_blank" class="btn-icon-link" title="View details/register">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i>
-        </a>
       </div>
-    `;
-  }).join("");
+      <a href="${c.contestLink}" target="_blank" class="contest-link" title="View"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+    </div>
+  </div>`).join("");
 }
 
-// Interactive filter tab actions
 window.filterContests = function(platform) {
   activeContestFilter = platform;
-  
-  // Update button active state
-  const filterBtns = document.querySelectorAll(".filter-btn");
-  filterBtns.forEach(btn => {
+  document.querySelectorAll(".filter-btn").forEach(btn => {
     btn.classList.remove("active");
-    if (btn.innerText === platform) {
+    if (btn.innerText === platform || (platform === "LeetCode" && btn.innerText === "LC") ||
+        (platform === "Codeforces" && btn.innerText === "CF") ||
+        (platform === "CodeChef" && btn.innerText === "CC") ||
+        (platform === "AtCoder" && btn.innerText === "AC")) {
       btn.classList.add("active");
     }
   });
-
   renderContestGrid();
 };
 
-// 6. Fetch Problem of the Day
+// ── POTD ────────────────────────────────────────────────
 async function fetchPotd() {
   const container = document.getElementById("potd-container");
   try {
     const res = await fetch(`${API_BASE}/api/potd`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const potds = await res.json();
-    
     if (!Array.isArray(potds) || potds.length === 0) {
-      container.innerHTML = `
-        <div class="no-potd-msg" style="grid-column: 1 / -1;">
-          <i class="fa-regular fa-circle-question" style="font-size: 2.5rem; margin-bottom: 12px; color: var(--text-muted);"></i>
-          <p>No problems of the day have been generated yet for today.</p>
-        </div>
-      `;
+      container.innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="fa-regular fa-circle-question" style="font-size:2rem;margin-bottom:8px;display:block"></i>No problems today yet.</div>`;
       return;
     }
-    
-    container.innerHTML = potds.map((potd) => {
-      let diffClass = `difficulty-${potd.difficulty.toLowerCase()}`;
-      if (!isNaN(potd.difficulty)) {
-        const r = Number(potd.difficulty);
-        if (r < 1200) diffClass = "difficulty-easy";
-        else if (r < 1600) diffClass = "difficulty-medium";
-        else diffClass = "difficulty-hard";
+    container.innerHTML = potds.map(p => {
+      let diff = p.difficulty.toLowerCase();
+      if (!isNaN(p.difficulty)) {
+        const r = Number(p.difficulty);
+        diff = r < 1200 ? "easy" : r < 1600 ? "medium" : "hard";
       }
-      const platformClass = `platform-${potd.platform.toLowerCase()}`;
-      
-      return `
-        <div class="potd-card-inner">
-          <h4 class="potd-title">${potd.problemName}</h4>
-          <div class="potd-meta">
-            <span class="platform-pill ${platformClass}">${potd.platform}</span>
-            <span class="difficulty-badge ${diffClass}">${potd.difficulty}</span>
-          </div>
-          <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">
-            Today's daily challenge is from <strong>${potd.platform}</strong>. Click below to tackle the problem and submit your solution!
-          </p>
-          <a href="${potd.problemLink}" target="_blank" class="btn btn-primary" style="margin-top: 8px; justify-content: center;">
-            Solve Challenge <i class="fa-solid fa-rocket"></i>
-          </a>
+      return `<div class="potd-card">
+        <h4>${p.problemName}</h4>
+        <div class="potd-tags">
+          <span class="platform-tag">${p.platform}</span>
+          <span class="diff-tag">${diff}</span>
         </div>
-      `;
+        <p style="color:var(--text-secondary);font-size:.85rem;line-height:1.6">Today's challenge from <strong>${p.platform}</strong>.</p>
+        <a href="${p.problemLink}" target="_blank" class="btn btn-primary btn-sm" style="align-self:flex-start">Solve <i class="fa-solid fa-rocket"></i></a>
+      </div>`;
     }).join("");
-  } catch (error) {
-    console.error("Failed to fetch POTD:", error);
-    container.innerHTML = `
-      <div class="no-potd-msg" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
-        <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: var(--color-error); margin-bottom: 12px;"></i>
-        <p style="font-weight: 600; margin-bottom: 4px;">Failed to load problem of the day.</p>
-        <span style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">${getFriendlyErrorMessage(error)}</span>
-      </div>
-    `;
+  } catch (e) {
+    console.error("POTD fetch failed:", e);
+    container.innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="fa-solid fa-triangle-exclamation" style="font-size:1.2rem;margin-bottom:6px;display:block"></i>Failed to load POTD.<br><span style="font-size:.8rem">${getFriendlyErrorMessage(e)}</span></div>`;
   }
 }
 
-// 7. Fetch Leaderboard / Starboard Standings
+// ── Jobs ────────────────────────────────────────────────
+async function fetchJobs() {
+  const container = document.getElementById("jobs-container");
+  try {
+    const res = await fetch(`${API_BASE}/api/jobs`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const jobs = await res.json();
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+      container.innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="fa-regular fa-circle-question" style="font-size:2rem;margin-bottom:8px;display:block"></i>No jobs available right now.</div>`;
+      return;
+    }
+    container.innerHTML = jobs.map(j => {
+      const cats = (j.categories || []).map(c => `<span class="platform-tag">${c}</span>`).join(" ");
+      const desc = (j.description || "").length > 180 ? j.description.slice(0, 180) + "…" : (j.description || "");
+      return `<div class="job-card">
+        <div class="job-cats">${cats}</div>
+        <h4>${j.title}</h4>
+        <p>${desc}</p>
+        <div class="job-actions">
+          ${j.applyLink ? `<a href="${j.applyLink}" target="_blank" class="btn btn-primary btn-sm">Apply <i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ""}
+          <a href="${j.url}" target="_blank" class="btn btn-secondary btn-sm">Details <i class="fa-solid fa-info-circle"></i></a>
+        </div>
+        ${j.date ? `<div class="job-date"><i class="fa-regular fa-calendar"></i> ${new Date(j.date).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}</div>` : ""}
+      </div>`;
+    }).join("");
+  } catch (e) {
+    console.error("Jobs fetch failed:", e);
+    container.innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="fa-solid fa-triangle-exclamation" style="font-size:1.2rem;margin-bottom:6px;display:block"></i>Failed to load jobs.<br><span style="font-size:.8rem">${getFriendlyErrorMessage(e)}</span></div>`;
+  }
+}
+
+// ── Starboard ───────────────────────────────────────────
 async function fetchStarboard() {
-  const tableBody = document.getElementById("starboard-list");
+  const tbody = document.getElementById("starboard-list");
   try {
     const res = await fetch(`${API_BASE}/api/starboard`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const leaderboard = await res.json();
-    if (!Array.isArray(leaderboard)) throw new Error("Invalid response format");
+    if (!Array.isArray(leaderboard)) throw new Error("Invalid response");
 
     if (leaderboard.length === 0) {
-      tableBody.innerHTML = `
-        <tr>
-          <td colspan="6" class="no-potd-msg">
-            <i class="fa-solid fa-ranking-star" style="font-size: 2.5rem; margin-bottom: 12px; color: var(--text-muted);"></i>
-            <p>No dueling stats found yet on this server. Challenge someone using <code>/duel challenge</code> to start the scoreboard!</p>
-          </td>
-        </tr>
-      `;
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-ranking-star" style="font-size:2rem;margin-bottom:8px;display:block"></i>No duel stats yet. Use <code>/duel challenge</code> to start!</div></td></tr>`;
       return;
     }
 
-    tableBody.innerHTML = leaderboard.map((row, idx) => {
-      let rankBadge = `${idx + 1}`;
-      if (idx === 0) rankBadge = "🥇";
-      else if (idx === 1) rankBadge = "🥈";
-      else if (idx === 2) rankBadge = "🥉";
-
-      const totalGames = (row.wins || 0) + (row.losses || 0);
-      const winRate = totalGames > 0 ? `${Math.round((row.wins / totalGames) * 100)}%` : "0%";
-
-      return `
-        <tr>
-          <td class="rank-cell">${rankBadge}</td>
-          <td class="coder-cell">
-            <img class="coder-avatar" src="${row.avatar}" alt="${row.username}">
-            <span class="coder-name">${row.username}</span>
-          </td>
-          <td class="score-cell font-bold">${row.score}</td>
-          <td class="win-cell">${row.wins}</td>
-          <td class="loss-cell">${row.losses}</td>
-          <td class="rate-cell">${winRate}</td>
-        </tr>
-      `;
+    tbody.innerHTML = leaderboard.map((row, idx) => {
+      const rank = idx === 0 ? "\u{1F947}" : idx === 1 ? "\u{1F948}" : idx === 2 ? "\u{1F949}" : `${idx + 1}`;
+      const total = (row.wins || 0) + (row.losses || 0);
+      const rate = total > 0 ? `${Math.round((row.wins / total) * 100)}%` : "0%";
+      return `<tr>
+        <td class="rank">${rank}</td>
+        <td class="coder"><img src="${row.avatar}" alt=""><span>${row.username}</span></td>
+        <td class="score">${row.score}</td>
+        <td>${row.wins}</td>
+        <td>${row.losses}</td>
+        <td>${rate}</td>
+      </tr>`;
     }).join("");
-  } catch (error) {
-    console.error("Failed to fetch Starboard:", error);
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="no-potd-msg">
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem;">
-            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.5rem; color: var(--color-error); margin-bottom: 8px;"></i>
-            <p style="font-weight: 600; margin-bottom: 2px;">Failed to load server duelist leaderboard.</p>
-            <span style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">${getFriendlyErrorMessage(error)}</span>
-          </div>
-        </td>
-      </tr>
-    `;
+  } catch (e) {
+    console.error("Starboard fetch failed:", e);
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="fa-solid fa-triangle-exclamation" style="font-size:1.2rem;margin-bottom:6px;display:block"></i>Failed to load leaderboard.</div></td></tr>`;
   }
 }
