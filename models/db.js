@@ -103,6 +103,15 @@ export function initDatabase() {
     );
   `);
 
+  // Migration: add missing columns for existing databases
+  const migrations = [
+    "ALTER TABLE guild_configs ADD COLUMN job_channel_id TEXT DEFAULT ''",
+    "ALTER TABLE guild_configs ADD COLUMN last_job_sent_at TEXT DEFAULT ''",
+  ];
+  for (const sql of migrations) {
+    try { db.exec(sql); } catch { /* column already exists */ }
+  }
+
   return db;
 }
 
