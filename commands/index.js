@@ -5,6 +5,8 @@ import potdChannel from "./admin/potd-channel.js";
 import potdRole from "./admin/potd-role.js";
 import resourceChannel from "./admin/resource-channel.js";
 import jobChannel from "./admin/job-channel.js";
+import jobSend from "./admin/job-send.js";
+import jobList from "./general/job-list.js";
 
 import contestAdd from "./contest/add.js";
 import contestRemove from "./contest/remove.js";
@@ -41,6 +43,8 @@ export const commands = [
   potdRole,
   resourceChannel,
   jobChannel,
+  jobSend,
+  jobList,
   contestAdd,
   contestRemove,
   contestList,

@@ -21,6 +21,7 @@ function formatContestDate(dateStr) {
   if (Number.isNaN(d.getTime())) return "Unknown Date";
 
   const timezone = env.timezone || "Asia/Kolkata";
+  const unix = Math.floor(d.getTime() / 1000);
 
   try {
     const opts = { timeZone: timezone };
@@ -40,7 +41,9 @@ function formatDuration(mins) {
   if (!mins) return "Unknown Duration";
   const hrs = Math.floor(mins / 60);
   const remainingMins = mins % 60;
-  return `${hrs}h ${remainingMins}m`;
+  if (hrs > 0 && remainingMins > 0) return `${hrs}h ${remainingMins}m`;
+  if (hrs > 0) return `${hrs}h`;
+  return `${remainingMins}m`;
 }
 
 export function buildContestEmbed({
@@ -54,6 +57,8 @@ export function buildContestEmbed({
   const slug = getContestSlug(link);
   const formattedTime = formatContestDate(contestTime);
   const formattedDuration = formatDuration(duration);
+  const d = new Date(contestTime);
+  const unix = !Number.isNaN(d.getTime()) ? Math.floor(d.getTime() / 1000) : null;
   
   const lines = [];
   if (statusText) {
@@ -61,7 +66,13 @@ export function buildContestEmbed({
     lines.push("");
   }
   lines.push(`**${contestName}**`);
-  lines.push(`\`${slug} | ${formattedTime} | ${formattedDuration}\` | [link ↗](${link})`);
+  
+  if (unix) {
+    lines.push(`⏰ <t:${unix}:F> (<t:${unix}:R>)`);
+    lines.push(`\`${platform} | ${formattedDuration}\` | [Join Contest ↗](${link})`);
+  } else {
+    lines.push(`\`${slug} | ${formattedTime} | ${formattedDuration}\` | [Join Contest ↗](${link})`);
+  }
 
   // Beautiful platform-specific embed colors
   let color = embedColors.contest;
@@ -172,10 +183,15 @@ export function buildJobEmbed({ title, description, applyLink, categories, date,
   lines.push("");
 
   if (description) {
-    const clean = description.replace(/<[^>]*>/g, "").trim();
+    let clean = description.replace(/<[^>]*>/g, "").trim();
+    clean = clean.replace(/window\.googletag[\s\S]*?\}\);?/gi, "");
+    clean = clean.replace(/googletag[\s\S]*?\}\);?/gi, "");
+    clean = clean.replace(/\s+/g, " ").trim();
     const truncated = clean.length > 250 ? clean.slice(0, 250) + "…" : clean;
-    lines.push(truncated);
-    lines.push("");
+    if (truncated) {
+      lines.push(truncated);
+      lines.push("");
+    }
   }
 
   if (url) {

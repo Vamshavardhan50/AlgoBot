@@ -134,6 +134,30 @@ async function fetchContests() {
   }
 }
 
+function formatBrowserDate(contest) {
+  if (contest.contestTimeRaw) {
+    const d = new Date(contest.contestTimeRaw);
+    if (!Number.isNaN(d.getTime())) {
+      const now = new Date();
+      const diffMs = d.getTime() - now.getTime();
+      let relative = "";
+      if (diffMs > 0) {
+        const diffMins = Math.round(diffMs / (60 * 1000));
+        if (diffMins < 60) relative = ` (in ${diffMins}m)`;
+        else if (diffMins < 1440) relative = ` (in ${Math.round(diffMins / 60)}h)`;
+        else relative = ` (in ${Math.round(diffMins / 1440)}d)`;
+      }
+      return d.toLocaleString("en-IN", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + relative;
+    }
+  }
+  return contest.contestTime || "Upcoming";
+}
+
 function renderContestGrid() {
   const container = document.getElementById("contests-list");
   let list = cachedContests;
@@ -144,18 +168,23 @@ function renderContestGrid() {
     container.innerHTML = `<div class="empty">No ${activeContestFilter !== "All" ? activeContestFilter + " " : ""}contests scheduled.</div>`;
     return;
   }
-  container.innerHTML = list.map(c => `<div class="contest-card">
-    <div class="contest-row">
-      <div>
-        <div class="contest-name" title="${c.contestName}">${c.contestName}</div>
-        <div class="contest-meta">
-          <span class="platform-tag">${c.platform}</span>
-          <span><i class="fa-regular fa-clock"></i> ${c.contestTime}</span>
+  container.innerHTML = list.map(c => {
+    const displayTime = formatBrowserDate(c);
+    const durationStr = c.duration ? `${Math.floor(c.duration / 60)}h ${c.duration % 60 ? (c.duration % 60) + 'm' : ''}`.trim() : '';
+    return `<div class="contest-card">
+      <div class="contest-row">
+        <div>
+          <div class="contest-name" title="${c.contestName}">${c.contestName}</div>
+          <div class="contest-meta">
+            <span class="platform-tag">${c.platform}</span>
+            <span><i class="fa-regular fa-clock"></i> ${displayTime}</span>
+            ${durationStr ? `<span class="diff-tag">${durationStr}</span>` : ''}
+          </div>
         </div>
+        <a href="${c.contestLink}" target="_blank" class="contest-link" title="View"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
       </div>
-      <a href="${c.contestLink}" target="_blank" class="contest-link" title="View"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-    </div>
-  </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 window.filterContests = function(platform) {

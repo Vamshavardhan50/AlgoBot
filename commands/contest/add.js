@@ -5,10 +5,21 @@ import { isValidUrl } from "../../utils/validation.js";
 
 function parseContestTime(value) {
   if (!value) return null;
-  const normalized = value.includes("T") ? value : value.replace(" ", "T");
-  const parsed = new Date(normalized);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString();
+  const trimmed = value.trim();
+  // If ISO string with timezone provided
+  if (trimmed.includes("Z") || /[\+\-]\d{2}/.test(trimmed)) {
+    const d = new Date(trimmed);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  // Otherwise default to IST (+05:30) if local time string is provided (e.g. 2026-08-15 20:00)
+  const normalized = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
+  const withTz = `${normalized}+05:30`;
+  const parsed = new Date(withTz);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  
+  const fallback = new Date(normalized);
+  if (!Number.isNaN(fallback.getTime())) return fallback.toISOString();
+  return null;
 }
 
 export default {

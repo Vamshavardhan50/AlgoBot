@@ -101,12 +101,23 @@ export function initDatabase() {
       score INTEGER DEFAULT 0,
       PRIMARY KEY (guild_id, user_id)
     );
+
+    CREATE TABLE IF NOT EXISTS sent_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      url TEXT UNIQUE NOT NULL,
+      title TEXT NOT NULL,
+      company TEXT DEFAULT '',
+      categories TEXT DEFAULT '[]',
+      apply_link TEXT DEFAULT '',
+      sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // Migration: add missing columns for existing databases
   const migrations = [
     "ALTER TABLE guild_configs ADD COLUMN job_channel_id TEXT DEFAULT ''",
     "ALTER TABLE guild_configs ADD COLUMN last_job_sent_at TEXT DEFAULT ''",
+    "CREATE TABLE IF NOT EXISTS sent_jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT UNIQUE NOT NULL, title TEXT NOT NULL, company TEXT DEFAULT '', categories TEXT DEFAULT '[]', apply_link TEXT DEFAULT '', sent_at TEXT NOT NULL DEFAULT (datetime('now')))",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

@@ -60,6 +60,13 @@ export default {
             "`/duel verify` — Verify solution submissions live\n" +
             "`/starboard` — View duelist standings leaderboard\n" +
             "*(Prefix commands: `!duel`, `!starboard`)*",
+        },
+        {
+          name: "📢 Tech Jobs & Internships",
+          value:
+            "`/job-channel <channel>` — Set target channel for 2-3 daily job alerts\n" +
+            "`/job-send [count]` — Manually broadcast fresh job opportunities (Admin)\n" +
+            "`/job-list [limit]` — Browse newest software engineering & internship openings",
         }
       )
       .setFooter({

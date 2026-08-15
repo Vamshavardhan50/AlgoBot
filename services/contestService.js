@@ -136,7 +136,19 @@ export async function fetchAtCoderContests() {
 
       let contestTime = "";
       try {
-        contestTime = new Date(timeMatch[1].trim().replace(" ", "T")).toISOString();
+        const rawTimeStr = timeMatch[1].trim(); // e.g. "2026-08-15 21:00:00+0900" or "2026-08-15 21:00:00"
+        let normalizedTime = rawTimeStr;
+        if (normalizedTime.includes("+") || normalizedTime.includes("-", 10)) {
+          // If timezone offset is attached like +0900, turn into standard ISO offset +09:00
+          normalizedTime = normalizedTime.replace(" ", "T");
+          if (/[\+\-]\d{4}$/.test(normalizedTime)) {
+            normalizedTime = normalizedTime.slice(0, -2) + ":" + normalizedTime.slice(-2);
+          }
+        } else {
+          // AtCoder contests without offset are always in JST (+09:00)
+          normalizedTime = normalizedTime.replace(" ", "T") + "+09:00";
+        }
+        contestTime = new Date(normalizedTime).toISOString();
       } catch {
         continue;
       }

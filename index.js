@@ -310,15 +310,22 @@ async function start() {
   // Contests API
   app.get("/api/contests", (_req, res) => {
     try {
-      const list = listUpcoming({ limit: 6 });
+      const list = listUpcoming({ limit: 12 });
       res.json(
-        list.map((c) => ({
-          platform: c.platform,
-          contestName: c.contestName,
-          contestLink: c.contestLink,
-          contestTime: formatDateTime(c.contestTime, env.timezone),
-          duration: c.duration,
-        })),
+        list.map((c) => {
+          const d = new Date(c.contestTime);
+          const unix = !Number.isNaN(d.getTime()) ? Math.floor(d.getTime() / 1000) : null;
+          return {
+            id: c.id,
+            platform: c.platform,
+            contestName: c.contestName,
+            contestLink: c.contestLink,
+            contestTime: formatDateTime(c.contestTime, env.timezone),
+            contestTimeRaw: c.contestTime,
+            contestTimeUnix: unix,
+            duration: c.duration,
+          };
+        }),
       );
     } catch (error) {
       logger.error("API Contests error", error?.message || error);

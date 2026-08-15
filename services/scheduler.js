@@ -93,15 +93,28 @@ export function startScheduler(client) {
     { timezone: env.timezone },
   );
 
-  // 5. Daily Job Alerts at 12:00
+  // 5. Daily Job Alerts (Morning 10:00 & Afternoon 16:00 IST)
   cron.schedule(
-    "0 12 * * *",
+    "0 10 * * *",
     async () => {
       try {
-        logger.info("Scheduler: Sending job alerts...");
-        await sendJobAlerts(client);
+        logger.info("Scheduler: Sending morning 10:00 job alerts...");
+        await sendJobAlerts(client, { forceCount: 3 });
       } catch (error) {
-        logger.error("Scheduler: Job alerts job failed", error?.message || error);
+        logger.error("Scheduler: Morning job alerts failed", error?.message || error);
+      }
+    },
+    { timezone: env.timezone },
+  );
+
+  cron.schedule(
+    "0 16 * * *",
+    async () => {
+      try {
+        logger.info("Scheduler: Sending afternoon 16:00 job alerts...");
+        await sendJobAlerts(client, { forceCount: 3 });
+      } catch (error) {
+        logger.error("Scheduler: Afternoon job alerts failed", error?.message || error);
       }
     },
     { timezone: env.timezone },
